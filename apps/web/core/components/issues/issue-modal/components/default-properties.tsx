@@ -25,12 +25,14 @@ import { ModuleDropdown } from "@/components/dropdowns/module/dropdown";
 import { PriorityDropdown } from "@/components/dropdowns/priority";
 import { StateDropdown } from "@/components/dropdowns/state/dropdown";
 import { ParentIssuesListModal } from "@/components/issues/parent-issues-list-modal";
+import { CatalogSelect } from "@/components/issues/issue-detail/catalog-select";
 import { IssueLabelSelect } from "@/components/issues/select";
 import { IssueIdentifier } from "@/components/issues/issue-detail/issue-identifier";
 // hooks
 import { useProjectEstimates } from "@/hooks/store/estimates";
 import { useProject } from "@/hooks/store/use-project";
 import { useUserPermissions } from "@/hooks/store/user";
+import { useVendor } from "@/hooks/store/use-vendor";
 import { usePlatformOS } from "@/hooks/use-platform-os";
 
 type TIssueDefaultPropertiesProps = {
@@ -45,6 +47,8 @@ type TIssueDefaultPropertiesProps = {
   isDraft: boolean;
   handleFormChange: () => void;
   setSelectedParentIssue: (issue: ISearchIssueResponse) => void;
+  selectedVendorId?: string | null;
+  onVendorChange?: (vendorId: string | null) => void;
 };
 
 export const IssueDefaultProperties = observer(function IssueDefaultProperties(props: TIssueDefaultPropertiesProps) {
@@ -60,6 +64,8 @@ export const IssueDefaultProperties = observer(function IssueDefaultProperties(p
     isDraft,
     handleFormChange,
     setSelectedParentIssue,
+    selectedVendorId = null,
+    onVendorChange,
   } = props;
   // states
   const [parentIssueListModalOpen, setParentIssueListModalOpen] = useState(false);
@@ -69,6 +75,7 @@ export const IssueDefaultProperties = observer(function IssueDefaultProperties(p
   const { getProjectById } = useProject();
   const { isMobile } = usePlatformOS();
   const { allowPermissions } = useUserPermissions();
+  const { workspaceVendors, createVendor } = useVendor();
   // derived values
   const projectDetails = getProjectById(projectId);
 
@@ -241,6 +248,20 @@ export const IssueDefaultProperties = observer(function IssueDefaultProperties(p
             </div>
           )}
         />
+      )}
+      {!id && onVendorChange && (
+        <div className="h-7">
+          <CatalogSelect
+            value={selectedVendorId}
+            onChange={(vendorId) => {
+              onVendorChange(vendorId);
+              handleFormChange();
+            }}
+            options={(workspaceVendors ?? []).map((vendor) => ({ id: vendor.id, label: vendor.name }))}
+            placeholder={t("common.vendor")}
+            onCreate={(name) => createVendor(workspaceSlug, { name })}
+          />
+        </div>
       )}
       {projectId && areEstimateEnabledByProjectId(projectId) && (
         <Controller

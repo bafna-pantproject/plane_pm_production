@@ -347,6 +347,52 @@ def filter_module(params, issue_filter, method, prefix=""):
     return issue_filter
 
 
+def filter_vendor(params, issue_filter, method, prefix=""):
+    if method == "GET":
+        vendors = [item for item in params.get("vendor").split(",") if item != "null"]
+        if "None" in vendors:
+            issue_filter[f"{prefix}order_detail__vendor__isnull"] = True
+        vendors = filter_valid_uuids(vendors)
+        if len(vendors) and "" not in vendors:
+            issue_filter[f"{prefix}order_detail__vendor__in"] = vendors
+    else:
+        if params.get("vendor", None) and len(params.get("vendor")) and params.get("vendor") != "null":
+            issue_filter[f"{prefix}order_detail__vendor__in"] = params.get("vendor")
+    return issue_filter
+
+
+def filter_style(params, issue_filter, method, prefix=""):
+    if method == "GET":
+        styles = [item for item in params.get("style").split(",") if item != "null"]
+        if "None" in styles:
+            issue_filter[f"{prefix}order_detail__style__isnull"] = True
+        styles = filter_valid_uuids(styles)
+        if len(styles) and "" not in styles:
+            issue_filter[f"{prefix}order_detail__style__in"] = styles
+    else:
+        if params.get("style", None) and len(params.get("style")) and params.get("style") != "null":
+            issue_filter[f"{prefix}order_detail__style__in"] = params.get("style")
+    return issue_filter
+
+
+def filter_purchase_order(params, issue_filter, method, prefix=""):
+    if method == "GET":
+        purchase_orders = [item for item in params.get("purchase_order").split(",") if item != "null"]
+        if "None" in purchase_orders:
+            issue_filter[f"{prefix}order_detail__purchase_order__isnull"] = True
+        purchase_orders = filter_valid_uuids(purchase_orders)
+        if len(purchase_orders) and "" not in purchase_orders:
+            issue_filter[f"{prefix}order_detail__purchase_order__in"] = purchase_orders
+    else:
+        if (
+            params.get("purchase_order", None)
+            and len(params.get("purchase_order"))
+            and params.get("purchase_order") != "null"
+        ):
+            issue_filter[f"{prefix}order_detail__purchase_order__in"] = params.get("purchase_order")
+    return issue_filter
+
+
 def filter_intake_status(params, issue_filter, method, prefix=""):
     if method == "GET":
         status = [item for item in params.get("intake_status").split(",") if item != "null"]
@@ -449,6 +495,9 @@ def issue_filters(query_params, method, prefix=""):
         "project": filter_project,
         "cycle": filter_cycle,
         "module": filter_module,
+        "vendor": filter_vendor,
+        "style": filter_style,
+        "purchase_order": filter_purchase_order,
         "intake_status": filter_intake_status,
         "inbox_status": filter_inbox_status,
         "sub_issue": filter_sub_issue_toggle,

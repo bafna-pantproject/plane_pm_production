@@ -69,6 +69,8 @@ export interface IssueFormProps {
   isProjectSelectionDisabled?: boolean;
   showActionButtons?: boolean;
   dataResetProperties?: any[];
+  selectedVendorId?: string | null;
+  onVendorChange?: (vendorId: string | null) => void;
 }
 
 export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormProps) {
@@ -93,6 +95,8 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
     isProjectSelectionDisabled = false,
     showActionButtons = true,
     dataResetProperties = [],
+    selectedVendorId = null,
+    onVendorChange,
   } = props;
 
   // states
@@ -438,6 +442,8 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
                   isDraft={isDraft}
                   handleFormChange={handleFormChange}
                   setSelectedParentIssue={setSelectedParentIssue}
+                  selectedVendorId={selectedVendorId}
+                  onVendorChange={onVendorChange}
                 />
               </div>
               {showActionButtons && (

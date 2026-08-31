@@ -10,7 +10,7 @@ import { useTranslation } from "@plane/i18n";
 // components
 import { NotAuthorizedView } from "@/components/auth-screens/not-authorized-view";
 import { PageHead } from "@/components/core/page-title";
-import { ProjectStateRoot } from "@/components/project-states";
+import { ProjectStateRoot, ProjectStageLeadTimes } from "@/components/project-states";
 import { SettingsContentWrapper } from "@/components/settings/content-wrapper";
 import { SettingsHeading } from "@/components/settings/heading";
 // hook
@@ -35,6 +35,7 @@ function StatesSettingsPage({ params }: Route.ComponentProps) {
     [EUserPermissions.ADMIN, EUserPermissions.MEMBER],
     EUserPermissionsLevel.PROJECT
   );
+  const isProjectAdmin = allowPermissions([EUserPermissions.ADMIN], EUserPermissionsLevel.PROJECT);
 
   if (workspaceUserInfo && !canPerformProjectMemberActions) {
     return <NotAuthorizedView section="settings" isProjectView className="h-auto" />;
@@ -51,6 +52,7 @@ function StatesSettingsPage({ params }: Route.ComponentProps) {
         <div className="mt-6">
           <ProjectStateRoot workspaceSlug={workspaceSlug} projectId={projectId} />
         </div>
+        <ProjectStageLeadTimes workspaceSlug={workspaceSlug} projectId={projectId} isEditable={isProjectAdmin} />
       </div>
     </SettingsContentWrapper>
   );

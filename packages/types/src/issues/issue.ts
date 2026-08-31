@@ -64,6 +64,14 @@ export type TBaseIssue = {
   module_ids: string[] | null;
   type_id: string | null;
 
+  // garment order tracking (optional: not present on every issue payload)
+  vendor_id?: string | null;
+  style_id?: string | null;
+  purchase_order_id?: string | null;
+  requested_delivery_date?: string | null;
+  vendor_promised_date?: string | null;
+  tentative_completion_date?: string | null;
+
   created_at: string;
   updated_at: string;
   start_date: string | null;

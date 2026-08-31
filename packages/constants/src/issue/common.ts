@@ -33,10 +33,14 @@ export enum EIssueGroupByToServerOptions {
   "cycle" = "cycle_id",
   "module" = "issue_module__module_id",
   "target_date" = "target_date",
+  // eslint-disable-next-line @typescript-eslint/no-duplicate-enum-values
   "project" = "project_id",
   "created_by" = "created_by",
   // eslint-disable-next-line @typescript-eslint/no-duplicate-enum-values
   "team_project" = "project_id",
+  "vendor" = "vendor_id",
+  "style" = "style_id",
+  "purchase_order" = "purchase_order_id",
 }
 
 export enum EIssueGroupBYServerToProperty {
@@ -121,6 +125,9 @@ export const ISSUE_GROUP_BY_OPTIONS: {
   { key: "project", titleTranslationKey: "common.project" }, // required this on my issues
   { key: "cycle", titleTranslationKey: "common.cycle" }, // required this on my issues
   { key: "module", titleTranslationKey: "common.module" }, // required this on my issues
+  { key: "vendor", titleTranslationKey: "common.vendor" },
+  { key: "style", titleTranslationKey: "common.style" },
+  { key: "purchase_order", titleTranslationKey: "common.purchase_order" },
   { key: "labels", titleTranslationKey: "common.labels" },
   { key: "assignees", titleTranslationKey: "common.assignees" },
   { key: "created_by", titleTranslationKey: "common.created_by" },

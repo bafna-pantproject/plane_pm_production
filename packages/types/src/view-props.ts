@@ -23,6 +23,9 @@ export type TIssueGroupByOptions =
   | "module"
   | "target_date"
   | "team_project"
+  | "vendor"
+  | "style"
+  | "purchase_order"
   | null;
 
 export type TIssueOrderByOptions =
@@ -75,6 +78,9 @@ export type TIssueParams =
   | "target_date"
   | "project"
   | "team_project"
+  | "vendor"
+  | "style"
+  | "purchase_order"
   | "group_by"
   | "sub_group_by"
   | "order_by"

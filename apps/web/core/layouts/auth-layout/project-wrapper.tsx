@@ -32,9 +32,14 @@ import { useCycle } from "@/hooks/store/use-cycle";
 import { useLabel } from "@/hooks/store/use-label";
 import { useMember } from "@/hooks/store/use-member";
 import { useModule } from "@/hooks/store/use-module";
+import { useOrderDetail } from "@/hooks/store/use-order-detail";
 import { useProject } from "@/hooks/store/use-project";
 import { useProjectState } from "@/hooks/store/use-project-state";
 import { useProjectView } from "@/hooks/store/use-project-view";
+import { usePurchaseOrder } from "@/hooks/store/use-purchase-order";
+import { useStageLeadTime } from "@/hooks/store/use-stage-lead-time";
+import { useStyle } from "@/hooks/store/use-style";
+import { useVendor } from "@/hooks/store/use-vendor";
 import { useUser, useUserPermissions } from "@/hooks/store/user";
 import { useTimeLineChart } from "@/hooks/use-timeline-chart";
 
@@ -64,6 +69,11 @@ export const ProjectAuthWrapper = observer(function ProjectAuthWrapper(props: IP
   const { data: currentUserData } = useUser();
   const { fetchProjectLabels } = useLabel();
   const { getProjectEstimates } = useProjectEstimates();
+  const { fetchWorkspaceVendors } = useVendor();
+  const { fetchWorkspaceStyles } = useStyle();
+  const { fetchWorkspacePurchaseOrders } = usePurchaseOrder();
+  const { fetchProjectStageLeadTimes } = useStageLeadTime();
+  const { fetchProjectOrderDetails } = useOrderDetail();
   // derived values
   const hasPermissionToCurrentProject = allowPermissions(
     [EUserPermissions.ADMIN, EUserPermissions.MEMBER, EUserPermissions.GUEST],
@@ -132,6 +142,28 @@ export const ProjectAuthWrapper = observer(function ProjectAuthWrapper(props: IP
   );
   // fetching project views
   useSWR(PROJECT_VIEWS(projectId, currentProjectRole), () => fetchViews(workspaceSlug, projectId), {
+    revalidateIfStale: false,
+    revalidateOnFocus: false,
+  });
+  // fetching workspace vendors, styles and purchase orders (garment order catalogs)
+  useSWR(`WORKSPACE_VENDORS_${workspaceSlug}`, () => fetchWorkspaceVendors(workspaceSlug), {
+    revalidateIfStale: false,
+    revalidateOnFocus: false,
+  });
+  useSWR(`WORKSPACE_STYLES_${workspaceSlug}`, () => fetchWorkspaceStyles(workspaceSlug), {
+    revalidateIfStale: false,
+    revalidateOnFocus: false,
+  });
+  useSWR(`WORKSPACE_PURCHASE_ORDERS_${workspaceSlug}`, () => fetchWorkspacePurchaseOrders(workspaceSlug), {
+    revalidateIfStale: false,
+    revalidateOnFocus: false,
+  });
+  // fetching project stage lead times and order details
+  useSWR(`PROJECT_STAGE_LEAD_TIMES_${projectId}`, () => fetchProjectStageLeadTimes(workspaceSlug, projectId), {
+    revalidateIfStale: false,
+    revalidateOnFocus: false,
+  });
+  useSWR(`PROJECT_ORDER_DETAILS_${projectId}`, () => fetchProjectOrderDetails(workspaceSlug, projectId), {
     revalidateIfStale: false,
     revalidateOnFocus: false,
   });

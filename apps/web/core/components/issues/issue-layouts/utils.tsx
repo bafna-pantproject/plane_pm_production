@@ -152,6 +152,9 @@ export const getGroupByColumns = ({
     assignees: getAssigneeColumns,
     created_by: getCreatedByColumns,
     team_project: getTeamProjectColumns,
+    vendor: getVendorColumns,
+    style: getStyleColumns,
+    purchase_order: getPurchaseOrderColumns,
   };
 
   // Get and return the columns for the specified group by option
@@ -236,6 +239,45 @@ const getModuleColumns = (): IGroupByColumn[] | undefined => {
     payload: {},
   });
   return modules;
+};
+
+const getVendorColumns = (): IGroupByColumn[] | undefined => {
+  const { workspaceVendors } = store.vendor;
+  if (!workspaceVendors) return;
+  const vendors: IGroupByColumn[] = workspaceVendors.map((vendor) => ({
+    id: vendor.id,
+    name: vendor.name,
+    icon: <LayersIcon className="h-3.5 w-3.5" />,
+    payload: { vendor_id: vendor.id },
+  }));
+  vendors.push({ id: "None", name: "None", icon: <LayersIcon className="h-3.5 w-3.5" />, payload: {} });
+  return vendors;
+};
+
+const getStyleColumns = (): IGroupByColumn[] | undefined => {
+  const { workspaceStyles } = store.style;
+  if (!workspaceStyles) return;
+  const styles: IGroupByColumn[] = workspaceStyles.map((style) => ({
+    id: style.id,
+    name: style.name || style.code,
+    icon: <LayersIcon className="h-3.5 w-3.5" />,
+    payload: { style_id: style.id },
+  }));
+  styles.push({ id: "None", name: "None", icon: <LayersIcon className="h-3.5 w-3.5" />, payload: {} });
+  return styles;
+};
+
+const getPurchaseOrderColumns = (): IGroupByColumn[] | undefined => {
+  const { workspacePurchaseOrders } = store.purchaseOrder;
+  if (!workspacePurchaseOrders) return;
+  const purchaseOrders: IGroupByColumn[] = workspacePurchaseOrders.map((purchaseOrder) => ({
+    id: purchaseOrder.id,
+    name: purchaseOrder.po_number,
+    icon: <LayersIcon className="h-3.5 w-3.5" />,
+    payload: { purchase_order_id: purchaseOrder.id },
+  }));
+  purchaseOrders.push({ id: "None", name: "None", icon: <LayersIcon className="h-3.5 w-3.5" />, payload: {} });
+  return purchaseOrders;
 };
 
 const getStateColumns = ({ projectId }: TGetColumns): IGroupByColumn[] | undefined => {

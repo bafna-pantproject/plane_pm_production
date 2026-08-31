@@ -150,6 +150,38 @@
           }
         }
       },
+      "vendors": {
+        "heading": "Vendors",
+        "description": "Manage the vendors you work with. Vendors created here are available to attach to any work item in this workspace.",
+        "title": "Vendors",
+        "add_vendor": "Add vendor",
+        "edit_vendor": "Edit vendor",
+        "fields": {
+          "name": "Name",
+          "code": "Code",
+          "contact_name": "Contact name",
+          "contact_email": "Contact email",
+          "contact_phone": "Contact phone",
+          "address": "Address",
+          "is_active": "Active"
+        },
+        "name_is_required": "Vendor name is required",
+        "inactive_badge": "Inactive",
+        "delete_confirm": {
+          "title": "Delete vendor",
+          "description": "Are you sure you want to delete vendor \"{name}\"? Work items already linked to this vendor will keep their existing data, but you won't be able to select it again. This action cannot be undone."
+        },
+        "toasts": {
+          "created": "Vendor created successfully",
+          "updated": "Vendor updated successfully",
+          "deleted": "Vendor deleted successfully",
+          "error": "Something went wrong. Please try again."
+        },
+        "empty_state": {
+          "title": "No vendors yet",
+          "description": "Add a vendor to start attaching it to work items."
+        }
+      },
       "api_tokens": {
         "heading": "Access Tokens",
         "description": "Generate secure API tokens to integrate your data with external systems and applications.",

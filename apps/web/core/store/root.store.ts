@@ -52,6 +52,16 @@ import type { IModuleFilterStore } from "./module_filter.store";
 import { ModuleFilterStore } from "./module_filter.store";
 import type { IMultipleSelectStore } from "./multiple_select.store";
 import { MultipleSelectStore } from "./multiple_select.store";
+import type { IOrderDetailStore } from "./order-detail.store";
+import { OrderDetailStore } from "./order-detail.store";
+import type { IPurchaseOrderStore } from "./purchase-order.store";
+import { PurchaseOrderStore } from "./purchase-order.store";
+import type { IStageLeadTimeStore } from "./stage-lead-time.store";
+import { StageLeadTimeStore } from "./stage-lead-time.store";
+import type { IStyleStore } from "./style.store";
+import { StyleStore } from "./style.store";
+import type { IVendorStore } from "./vendor.store";
+import { VendorStore } from "./vendor.store";
 import type { IWorkspaceNotificationStore } from "./notifications/workspace-notifications.store";
 import { WorkspaceNotificationStore } from "./notifications/workspace-notifications.store";
 import type { IProjectPageStore } from "./pages/project-page.store";
@@ -103,6 +113,11 @@ export class CoreRootStore {
   workItemFilters: IWorkItemFilterStore;
   powerK: IPowerKStore;
   timelineStore: ITimelineStore;
+  vendor: IVendorStore;
+  style: IStyleStore;
+  purchaseOrder: IPurchaseOrderStore;
+  stageLeadTime: IStageLeadTimeStore;
+  orderDetail: IOrderDetailStore;
 
   constructor() {
     this.router = new RouterStore();
@@ -135,6 +150,11 @@ export class CoreRootStore {
     this.workItemFilters = new WorkItemFilterStore();
     this.powerK = new PowerKStore();
     this.timelineStore = new TimeLineStore(this);
+    this.vendor = new VendorStore(this);
+    this.style = new StyleStore(this);
+    this.purchaseOrder = new PurchaseOrderStore(this);
+    this.stageLeadTime = new StageLeadTimeStore(this);
+    this.orderDetail = new OrderDetailStore(this);
   }
 
   resetOnSignOut() {
@@ -169,6 +189,11 @@ export class CoreRootStore {
     this.workItemFilters = new WorkItemFilterStore();
     this.powerK = new PowerKStore();
     this.timelineStore = new TimeLineStore(this);
+    this.vendor = new VendorStore(this);
+    this.style = new StyleStore(this);
+    this.purchaseOrder = new PurchaseOrderStore(this);
+    this.stageLeadTime = new StageLeadTimeStore(this);
+    this.orderDetail = new OrderDetailStore(this);
   }
 }
 

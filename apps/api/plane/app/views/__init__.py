@@ -84,6 +84,14 @@ from .workspace.quick_link import QuickLinkViewSet
 from .workspace.sticky import WorkspaceStickyViewSet
 
 from .state.base import StateViewSet, IntakeStateEndpoint
+from .order import (
+    VendorViewSet,
+    StyleViewSet,
+    PurchaseOrderViewSet,
+    StageLeadTimeViewSet,
+    IssueOrderDetailEndpoint,
+    ProjectOrderDetailsEndpoint,
+)
 from .view.base import (
     WorkspaceViewViewSet,
     WorkspaceViewIssuesViewSet,

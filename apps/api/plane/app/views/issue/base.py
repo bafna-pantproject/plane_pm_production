@@ -55,6 +55,7 @@ from plane.db.models import (
     IssueReaction,
     IssueRelation,
     IssueSubscriber,
+    OrderDetail,
     ProjectUserProperty,
     ModuleIssue,
     Project,
@@ -75,6 +76,10 @@ from plane.utils.paginator import GroupedOffsetPaginator, SubGroupedOffsetPagina
 from plane.utils.timezone_converter import user_timezone_converter
 
 from .. import BaseAPIView, BaseViewSet
+
+
+def order_detail_subquery(field):
+    return Subquery(OrderDetail.objects.filter(issue=OuterRef("id")).values(field)[:1])
 
 
 class IssueListEndpoint(BaseAPIView):
@@ -147,6 +152,12 @@ class IssueListEndpoint(BaseAPIView):
                 .annotate(count=Func(F("id"), function="Count"))
                 .values("count")
             )
+            .annotate(vendor_id=order_detail_subquery("vendor_id"))
+            .annotate(style_id=order_detail_subquery("style_id"))
+            .annotate(purchase_order_id=order_detail_subquery("purchase_order_id"))
+            .annotate(requested_delivery_date=order_detail_subquery("requested_delivery_date"))
+            .annotate(vendor_promised_date=order_detail_subquery("vendor_promised_date"))
+            .annotate(tentative_completion_date=order_detail_subquery("tentative_completion_date"))
             .distinct()
         )
 
@@ -199,6 +210,12 @@ class IssueListEndpoint(BaseAPIView):
                 "is_draft",
                 "archived_at",
                 "deleted_at",
+                "vendor_id",
+                "style_id",
+                "purchase_order_id",
+                "requested_delivery_date",
+                "vendor_promised_date",
+                "tentative_completion_date",
             )
             datetime_fields = ["created_at", "updated_at"]
             issues = user_timezone_converter(issues, datetime_fields, request.user.user_timezone)
@@ -257,6 +274,12 @@ class IssueViewSet(BaseViewSet):
                     .values("count")
                 )
             )
+            .annotate(vendor_id=order_detail_subquery("vendor_id"))
+            .annotate(style_id=order_detail_subquery("style_id"))
+            .annotate(purchase_order_id=order_detail_subquery("purchase_order_id"))
+            .annotate(requested_delivery_date=order_detail_subquery("requested_delivery_date"))
+            .annotate(vendor_promised_date=order_detail_subquery("vendor_promised_date"))
+            .annotate(tentative_completion_date=order_detail_subquery("tentative_completion_date"))
         )
 
         return issues

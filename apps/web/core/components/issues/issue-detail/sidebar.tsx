@@ -4,7 +4,9 @@
  * See the LICENSE file for details.
  */
 
+import { Building2, CalendarCheck2, CalendarClock, Receipt, Tag } from "lucide-react";
 import { observer } from "mobx-react";
+import { useEffect } from "react";
 // i18n
 import { useTranslation } from "@plane/i18n";
 // ui
@@ -21,7 +23,13 @@ import {
   EstimatePropertyIcon,
   ParentPropertyIcon,
 } from "@plane/propel/icons";
-import { cn, getDate, renderFormattedPayloadDate, shouldHighlightIssueDueDate } from "@plane/utils";
+import {
+  cn,
+  getDate,
+  renderFormattedDate,
+  renderFormattedPayloadDate,
+  shouldHighlightIssueDueDate,
+} from "@plane/utils";
 // components
 import { DateDropdown } from "@/components/dropdowns/date";
 import { EstimateDropdown } from "@/components/dropdowns/estimate";
@@ -33,11 +41,16 @@ import { StateDropdown } from "@/components/dropdowns/state/dropdown";
 import { useProjectEstimates } from "@/hooks/store/estimates";
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
 import { useMember } from "@/hooks/store/use-member";
+import { useOrderDetail } from "@/hooks/store/use-order-detail";
 import { useProject } from "@/hooks/store/use-project";
 import { useProjectState } from "@/hooks/store/use-project-state";
+import { usePurchaseOrder } from "@/hooks/store/use-purchase-order";
+import { useStyle } from "@/hooks/store/use-style";
+import { useVendor } from "@/hooks/store/use-vendor";
 // components
 import { IssueParentSelectRoot } from "@/components/issues/parent-select-root";
 import { SidebarPropertyListItem } from "@/components/common/layout/sidebar/property-list-item";
+import { CatalogSelect } from "./catalog-select";
 import { IssueCycleSelect } from "./cycle-select";
 import { IssueLabel } from "./label";
 import { IssueModuleSelect } from "./module-select";
@@ -62,6 +75,19 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
   } = useIssueDetail();
   const { getUserDetails } = useMember();
   const { getStateById } = useProjectState();
+  const { workspaceVendors, createVendor } = useVendor();
+  const { workspaceStyles, createStyle } = useStyle();
+  const { workspacePurchaseOrders, createPurchaseOrder } = usePurchaseOrder();
+  const { getOrderDetailByIssueId, fetchIssueOrderDetail, updateIssueOrderDetail } = useOrderDetail();
+  const orderDetail = getOrderDetailByIssueId(issueId);
+
+  // the project-wide bulk fetch (project-wrapper.tsx) may not have completed yet when the
+  // sidebar first mounts, so backstop it with a fetch scoped to just this issue.
+  useEffect(() => {
+    if (!orderDetail) fetchIssueOrderDetail(workspaceSlug, projectId, issueId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workspaceSlug, projectId, issueId]);
+
   const issue = getIssueById(issueId);
   if (!issue) return <></>;
 
@@ -70,6 +96,8 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
   // derived values
   const projectDetails = getProjectById(issue.project_id);
   const stateDetails = getStateById(issue.state_id);
+  const updateOrderDetail = (data: Parameters<typeof updateIssueOrderDetail>[3]) =>
+    updateIssueOrderDetail(workspaceSlug, projectId, issueId, data);
 
   const minDate = issue.start_date ? getDate(issue.start_date) : null;
   minDate?.setDate(minDate.getDate());
@@ -247,6 +275,89 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
                 issueId={issueId}
                 disabled={!isEditable}
               />
+            </SidebarPropertyListItem>
+
+            <SidebarPropertyListItem icon={Building2} label={t("common.vendor")}>
+              <CatalogSelect
+                className="w-full grow"
+                value={orderDetail?.vendor}
+                onChange={(val) => updateOrderDetail({ vendor: val })}
+                options={(workspaceVendors ?? []).map((vendor) => ({ id: vendor.id, label: vendor.name }))}
+                placeholder={t("common.vendor")}
+                disabled={!isEditable}
+                onCreate={isEditable ? (name) => createVendor(workspaceSlug, { name }) : undefined}
+              />
+            </SidebarPropertyListItem>
+
+            <SidebarPropertyListItem icon={Tag} label={t("common.style")}>
+              <CatalogSelect
+                className="w-full grow"
+                value={orderDetail?.style}
+                onChange={(val) => updateOrderDetail({ style: val })}
+                options={(workspaceStyles ?? []).map((style) => ({ id: style.id, label: style.name || style.code }))}
+                placeholder={t("common.style")}
+                disabled={!isEditable}
+                onCreate={isEditable ? (name) => createStyle(workspaceSlug, { code: name, name }) : undefined}
+              />
+            </SidebarPropertyListItem>
+
+            <SidebarPropertyListItem icon={Receipt} label={t("common.purchase_order")}>
+              <CatalogSelect
+                className="w-full grow"
+                value={orderDetail?.purchase_order}
+                onChange={(val) => updateOrderDetail({ purchase_order: val })}
+                options={(workspacePurchaseOrders ?? []).map((po) => ({ id: po.id, label: po.po_number }))}
+                placeholder={t("common.purchase_order")}
+                disabled={!isEditable}
+                // a PO must belong to a vendor, so quick-create is only offered once one is picked above
+                onCreate={
+                  isEditable && orderDetail?.vendor
+                    ? (name) => createPurchaseOrder(workspaceSlug, { po_number: name, vendor: orderDetail.vendor! })
+                    : undefined
+                }
+              />
+            </SidebarPropertyListItem>
+
+            <SidebarPropertyListItem icon={CalendarClock} label={t("common.requested_delivery_date")}>
+              <DateDropdown
+                placeholder={t("common.requested_delivery_date")}
+                value={orderDetail?.requested_delivery_date ?? null}
+                onChange={(val) =>
+                  updateOrderDetail({ requested_delivery_date: val ? renderFormattedPayloadDate(val) : null })
+                }
+                disabled={!isEditable}
+                buttonVariant="transparent-with-text"
+                className="group w-full grow"
+                buttonContainerClassName="w-full text-left h-7.5"
+                buttonClassName={`text-body-xs-regular ${orderDetail?.requested_delivery_date ? "" : "text-placeholder"}`}
+                hideIcon
+                clearIconClassName="h-3 w-3 hidden group-hover:inline"
+              />
+            </SidebarPropertyListItem>
+
+            <SidebarPropertyListItem icon={CalendarClock} label={t("common.vendor_promised_date")}>
+              <DateDropdown
+                placeholder={t("common.vendor_promised_date")}
+                value={orderDetail?.vendor_promised_date ?? null}
+                onChange={(val) =>
+                  updateOrderDetail({ vendor_promised_date: val ? renderFormattedPayloadDate(val) : null })
+                }
+                disabled={!isEditable}
+                buttonVariant="transparent-with-text"
+                className="group w-full grow"
+                buttonContainerClassName="w-full text-left h-7.5"
+                buttonClassName={`text-body-xs-regular ${orderDetail?.vendor_promised_date ? "" : "text-placeholder"}`}
+                hideIcon
+                clearIconClassName="h-3 w-3 hidden group-hover:inline"
+              />
+            </SidebarPropertyListItem>
+
+            <SidebarPropertyListItem icon={CalendarCheck2} label={t("common.tentative_completion_date")}>
+              <span className="px-2 text-body-xs-regular text-tertiary">
+                {orderDetail?.tentative_completion_date
+                  ? renderFormattedDate(orderDetail.tentative_completion_date)
+                  : "—"}
+              </span>
             </SidebarPropertyListItem>
           </div>
         </div>
