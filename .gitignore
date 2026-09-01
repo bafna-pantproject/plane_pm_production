@@ -114,7 +114,6 @@ scripts/
 
 # i18n auto-generated types (regenerated on every build)
 packages/i18n/src/types/keys.generated.ts
-packages/i18n/locales
 
 # Local security notes (not for version control)
 /security/
