@@ -50,6 +50,11 @@ urlpatterns = [
         name="project-identifiers",
     ),
     path(
+        "workspaces/<str:slug>/projects/<uuid:project_id>/clone/",
+        ProjectViewSet.as_view({"post": "clone"}),
+        name="project-clone",
+    ),
+    path(
         "workspaces/<str:slug>/projects/<uuid:project_id>/invitations/",
         ProjectInvitationsViewset.as_view({"get": "list", "post": "create"}),
         name="project-member-invite",

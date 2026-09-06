@@ -29,6 +29,7 @@ from plane.db.models import (
     UserFavorite,
     DeployBoard,
     Intake,
+    Label,
     Project,
     ProjectIdentifier,
     ProjectMember,
@@ -310,6 +311,135 @@ class ProjectViewSet(BaseViewSet):
             serializer = ProjectListSerializer(project)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @allow_permission([ROLE.ADMIN, ROLE.MEMBER], level="WORKSPACE")
+    def clone(self, request, slug, project_id):
+        workspace = Workspace.objects.get(slug=slug)
+        source_project = Project.objects.filter(pk=project_id, workspace__slug=slug).first()
+
+        if source_project is None:
+            return Response({"error": "Project does not exist"}, status=status.HTTP_404_NOT_FOUND)
+
+        is_workspace_admin = WorkspaceMember.objects.filter(
+            member=request.user,
+            workspace__slug=slug,
+            is_active=True,
+            role=ROLE.ADMIN.value,
+        ).exists()
+        is_source_project_member = ProjectMember.objects.filter(
+            project=source_project, member=request.user, is_active=True
+        ).exists()
+
+        if not is_workspace_admin and not is_source_project_member:
+            return Response(
+                {"error": "You don't have the required permissions."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        clone_data = {
+            "name": request.data.get("name"),
+            "identifier": request.data.get("identifier"),
+            "description": source_project.description,
+            "description_html": source_project.description_html,
+            "description_text": source_project.description_text,
+            "network": source_project.network,
+            "emoji": source_project.emoji,
+            "icon_prop": source_project.icon_prop,
+            "logo_props": source_project.logo_props,
+            "module_view": source_project.module_view,
+            "cycle_view": source_project.cycle_view,
+            "issue_views_view": source_project.issue_views_view,
+            "page_view": source_project.page_view,
+            "intake_view": source_project.intake_view,
+            "is_time_tracking_enabled": source_project.is_time_tracking_enabled,
+            "is_issue_type_enabled": source_project.is_issue_type_enabled,
+            "guest_view_all_features": source_project.guest_view_all_features,
+            "archive_in": source_project.archive_in,
+            "close_in": source_project.close_in,
+            "timezone": source_project.timezone,
+        }
+
+        serializer = ProjectSerializer(data=clone_data, context={"workspace_id": workspace.id})
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.save()
+        new_project = serializer.instance
+
+        # the cloning user is always the admin of the new project
+        ProjectMember.objects.create(project=new_project, member=request.user, role=ROLE.ADMIN.value)
+
+        # carry over the source project's other active members with their roles
+        for project_member in ProjectMember.objects.filter(project=source_project, is_active=True).exclude(
+            member=request.user
+        ):
+            ProjectMember.objects.create(
+                project=new_project,
+                member_id=project_member.member_id,
+                role=project_member.role,
+            )
+
+        # keep the project lead / default assignee only if they made it over as a member
+        new_member_ids = set(
+            ProjectMember.objects.filter(project=new_project, is_active=True).values_list("member_id", flat=True)
+        )
+        carried_over_fields = {}
+        if source_project.project_lead_id in new_member_ids:
+            carried_over_fields["project_lead_id"] = source_project.project_lead_id
+        if source_project.default_assignee_id in new_member_ids:
+            carried_over_fields["default_assignee_id"] = source_project.default_assignee_id
+        if carried_over_fields:
+            Project.objects.filter(pk=new_project.id).update(**carried_over_fields)
+
+        # carry over the source project's states in place of the usual default states
+        State.objects.bulk_create(
+            [
+                State(
+                    name=state.name,
+                    description=state.description,
+                    color=state.color,
+                    sequence=state.sequence,
+                    group=state.group,
+                    is_triage=state.is_triage,
+                    default=state.default,
+                    project=new_project,
+                    workspace=workspace,
+                    created_by=request.user,
+                )
+                for state in State.all_state_objects.filter(project=source_project, deleted_at__isnull=True)
+            ]
+        )
+
+        # carry over labels, preserving parent/child relationships
+        old_to_new_label_id = {}
+        for label in Label.objects.filter(project=source_project):
+            new_label = Label.objects.create(
+                project=new_project,
+                name=label.name,
+                description=label.description,
+                color=label.color,
+                sort_order=label.sort_order,
+                created_by=request.user,
+            )
+            old_to_new_label_id[label.id] = new_label.id
+        for label in Label.objects.filter(project=source_project, parent__isnull=False):
+            new_parent_id = old_to_new_label_id.get(label.parent_id)
+            if new_parent_id:
+                Label.objects.filter(pk=old_to_new_label_id[label.id]).update(parent_id=new_parent_id)
+
+        project = self.get_queryset().filter(pk=new_project.id).first()
+
+        model_activity.delay(
+            model_name="project",
+            model_id=str(project.id),
+            requested_data=request.data,
+            current_instance=None,
+            actor_id=request.user.id,
+            slug=slug,
+            origin=base_host(request=request, is_app=True),
+        )
+
+        serializer = ProjectListSerializer(project)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def partial_update(self, request, slug, pk=None):
         # try:

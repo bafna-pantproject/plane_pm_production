@@ -17,6 +17,7 @@ import { SettingsBoxedControlItem } from "@/components/settings/boxed-control-it
 import { useProject } from "@/hooks/store/use-project";
 // local imports
 import { ArchiveRestoreProjectModal } from "../archive-restore-modal";
+import { CloneProjectModal } from "../clone-project-modal";
 import { DeleteProjectModal } from "../delete-project-modal";
 
 type Props = {
@@ -30,6 +31,7 @@ export const GeneralProjectSettingsControlSection = observer(function GeneralPro
   // states
   const [selectProject, setSelectedProject] = useState<string | null>(null);
   const [archiveProject, setArchiveProject] = useState<boolean>(false);
+  const [cloneProjectModal, setCloneProjectModal] = useState<boolean>(false);
   // params
   const { workspaceSlug } = useParams();
   // store hooks
@@ -50,15 +52,34 @@ export const GeneralProjectSettingsControlSection = observer(function GeneralPro
           archive
         />
       )}
+      {workspaceSlug && (
+        <CloneProjectModal
+          workspaceSlug={workspaceSlug.toString()}
+          project={currentProjectDetails}
+          isOpen={cloneProjectModal}
+          onClose={() => setCloneProjectModal(false)}
+        />
+      )}
       <DeleteProjectModal
         project={currentProjectDetails}
         isOpen={Boolean(selectProject)}
         onClose={() => setSelectedProject(null)}
       />
       <div className="rounded-lg border border-subtle bg-layer-2">
-        {/* Project Selector */}
+        {/* Clone project */}
         <SettingsBoxedControlItem
           className="rounded-b-none border-0 border-b"
+          title={t("clone_project")}
+          description={t("clone_project_description")}
+          control={
+            <Button variant="secondary" onClick={() => setCloneProjectModal(true)}>
+              {t("clone")}
+            </Button>
+          }
+        />
+        {/* Project Selector */}
+        <SettingsBoxedControlItem
+          className="rounded-none border-0 border-b"
           title={t("archive")}
           description="Archiving a project will unlist your project from your side navigation although you will still be able to access it from your projects page. You can restore the project or delete it whenever you want."
           control={

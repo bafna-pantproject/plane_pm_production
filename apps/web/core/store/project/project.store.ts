@@ -69,6 +69,11 @@ export interface IProjectStore {
   updateProjectView: (workspaceSlug: string, projectId: string, viewProps: any) => Promise<any>;
   // CRUD actions
   createProject: (workspaceSlug: string, data: Partial<TProject>) => Promise<TProject>;
+  cloneProject: (
+    workspaceSlug: string,
+    projectId: string,
+    data: { name: string; identifier: string }
+  ) => Promise<TProject>;
   updateProject: (workspaceSlug: string, projectId: string, data: Partial<TProject>) => Promise<TProject>;
   deleteProject: (workspaceSlug: string, projectId: string) => Promise<void>;
   // archive actions
@@ -129,6 +134,7 @@ export class ProjectStore implements IProjectStore {
       updateProjectView: action,
       // CRUD actions
       createProject: action,
+      cloneProject: action,
       updateProject: action,
       // collapsible actions
       setOpenCollapsibleSection: action,
@@ -539,6 +545,24 @@ export class ProjectStore implements IProjectStore {
       return response;
     } catch (error) {
       console.log("Failed to create project from project store");
+      throw error;
+    }
+  };
+
+  /**
+   * Clones a project (carrying over its states, labels and members) and adds it to the store
+   * @param workspaceSlug
+   * @param projectId source project to clone
+   * @param data name/identifier for the new project
+   * @returns Promise<TProject>
+   */
+  cloneProject = async (workspaceSlug: string, projectId: string, data: { name: string; identifier: string }) => {
+    try {
+      const response = await this.projectService.cloneProject(workspaceSlug, projectId, data);
+      this.processProjectAfterCreation(workspaceSlug, response);
+      return response;
+    } catch (error) {
+      console.log("Failed to clone project from project store");
       throw error;
     }
   };
