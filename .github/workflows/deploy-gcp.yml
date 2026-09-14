@@ -1,0 +1,39 @@
+name: Deploy to GCP VM
+
+# Redeploys plane-pm (project-management-tpp / asia-south1-a) whenever
+# `preview` is pushed, or on demand via the Actions tab ("Run workflow").
+#
+# One-time setup required before this will work -- see
+# deployments/gcp/README.md in this same PR/commit for the full runbook
+# (service account, IAM roles, firewall rule, GitHub secrets).
+
+on:
+  push:
+    branches: [preview]
+  workflow_dispatch: {}
+
+concurrency:
+  group: deploy-gcp-vm
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up gcloud CLI
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+
+      - name: Deploy over SSH (via IAP tunnel, no public SSH exposure needed)
+        run: |
+          gcloud compute ssh "${{ vars.GCP_INSTANCE }}" \
+            --project="${{ vars.GCP_PROJECT_ID }}" \
+            --zone="${{ vars.GCP_ZONE }}" \
+            --tunnel-through-iap \
+            --command="DEPLOY_DIR='${{ vars.DEPLOY_DIR }}' DEPLOY_BRANCH='${{ github.ref_name }}' bash '${{ vars.DEPLOY_DIR }}/deployments/gcp/deploy.sh'"

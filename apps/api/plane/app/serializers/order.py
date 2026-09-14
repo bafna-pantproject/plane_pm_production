@@ -53,6 +53,8 @@ class OrderDetailSerializer(BaseSerializer):
             "workspace_id",
             "project_id",
             "issue",
+            "category",
+            "quantity",
             "vendor",
             "style",
             "purchase_order",

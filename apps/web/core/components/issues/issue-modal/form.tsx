@@ -30,11 +30,11 @@ import {
 } from "@plane/utils";
 // components
 import {
+  IssueCategoryQuantityInput,
   IssueDefaultProperties,
   IssueDescriptionEditor,
   IssueParentTag,
   IssueProjectSelect,
-  IssueTitleInput,
 } from "@/components/issues/issue-modal/components";
 // helpers
 // hooks
@@ -42,13 +42,14 @@ import { useIssueModal } from "@/hooks/context/use-issue-modal";
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
 import { useProject } from "@/hooks/store/use-project";
 import { useProjectState } from "@/hooks/store/use-project-state";
+import { useVendor } from "@/hooks/store/use-vendor";
 import { useWorkspaceDraftIssues } from "@/hooks/store/workspace-draft";
 import { usePlatformOS } from "@/hooks/use-platform-os";
 import { useProjectIssueProperties } from "@/hooks/use-project-issue-properties";
 
 export interface IssueFormProps {
   data?: Partial<TIssue>;
-  issueTitleRef: React.MutableRefObject<HTMLInputElement | null>;
+  categoryInputRef: React.MutableRefObject<HTMLInputElement | null>;
   isCreateMoreToggleEnabled: boolean;
   onAssetUpload: (assetId: string) => void;
   onCreateMoreToggleChange: (value: boolean) => void;
@@ -71,13 +72,17 @@ export interface IssueFormProps {
   dataResetProperties?: any[];
   selectedVendorId?: string | null;
   onVendorChange?: (vendorId: string | null) => void;
+  category: string;
+  quantity: number | null;
+  onCategoryChange: (category: string) => void;
+  onQuantityChange: (quantity: number | null) => void;
 }
 
 export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormProps) {
   const { t } = useTranslation();
   const {
     data,
-    issueTitleRef,
+    categoryInputRef,
     onAssetUpload,
     onChange,
     onClose,
@@ -97,11 +102,17 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
     dataResetProperties = [],
     selectedVendorId = null,
     onVendorChange,
+    category,
+    quantity,
+    onCategoryChange,
+    onQuantityChange,
   } = props;
 
   // states
   const [gptAssistantModal, setGptAssistantModal] = useState(false);
   const [isMoving, setIsMoving] = useState<boolean>(false);
+  const [categoryError, setCategoryError] = useState<string | undefined>(undefined);
+  const [quantityError, setQuantityError] = useState<string | undefined>(undefined);
 
   // refs
   const editorRef = useRef<EditorRefApi>(null);
@@ -134,6 +145,7 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
   } = useIssueDetail();
   const { fetchCycles } = useProjectIssueProperties();
   const { getStateById } = useProjectState();
+  const { getVendorById } = useVendor();
 
   // form info
   const methods = useForm<TIssue>({
@@ -141,7 +153,6 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
     reValidateMode: "onChange",
   });
   const {
-    formState,
     formState: { isDirty, isSubmitting, dirtyFields },
     handleSubmit,
     reset,
@@ -201,6 +212,19 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, projectId]);
 
+  // derive the work item's name from category, vendor, and quantity since
+  // there is no longer a free-form title field on the create/update form
+  const vendorIdForDerivedName = data?.id ? data?.vendor_id : selectedVendorId;
+  const vendorNameForDerivedName = vendorIdForDerivedName ? getVendorById(vendorIdForDerivedName)?.name : undefined;
+  useEffect(() => {
+    const nameParts = [category, vendorNameForDerivedName, quantity ? `${quantity} units` : undefined].filter(
+      Boolean
+    );
+    if (nameParts.length === 0) return;
+    setValue("name", nameParts.join(" - "), { shouldDirty: true, shouldValidate: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [category, quantity, vendorNameForDerivedName]);
+
   useEffect(() => {
     if (workItemTemplateId && editorRef.current) {
       handleTemplateChange({
@@ -212,7 +236,24 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workItemTemplateId]);
 
+  const validateCategoryAndQuantity = () => {
+    const trimmedCategory = category.trim();
+    const nextCategoryError = trimmedCategory === "" ? t("category_is_required") : undefined;
+    const nextQuantityError =
+      quantity === null || quantity === undefined
+        ? t("quantity_is_required")
+        : !Number.isInteger(quantity) || quantity <= 0
+          ? t("quantity_must_be_a_positive_integer")
+          : undefined;
+    setCategoryError(nextCategoryError);
+    setQuantityError(nextQuantityError);
+    return !nextCategoryError && !nextQuantityError;
+  };
+
   const handleFormSubmit = async (formData: Partial<TIssue>, is_draft_issue = false) => {
+    // work items are identified by category + quantity instead of a free-form title
+    if (!validateCategoryAndQuantity()) return;
+
     // Check if the editor is ready to discard
     if (!editorRef.current?.isEditorReadyToDiscard()) {
       setToast({
@@ -385,11 +426,15 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
                 </div>
               )}
               <div className="space-y-1">
-                <IssueTitleInput
-                  control={control}
-                  issueTitleRef={issueTitleRef}
-                  formState={formState}
+                <IssueCategoryQuantityInput
+                  category={category}
+                  quantity={quantity}
+                  onCategoryChange={onCategoryChange}
+                  onQuantityChange={onQuantityChange}
+                  categoryInputRef={categoryInputRef}
                   handleFormChange={handleFormChange}
+                  categoryError={categoryError}
+                  quantityError={quantityError}
                 />
               </div>
             </div>

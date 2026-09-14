@@ -47,6 +47,8 @@ export interface TOrderDetail {
   workspace_id: string;
   project_id: string;
   readonly issue: string;
+  category: string;
+  quantity: number | null;
   vendor: string | null;
   style: string | null;
   purchase_order: string | null;

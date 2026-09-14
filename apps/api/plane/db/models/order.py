@@ -3,6 +3,7 @@
 # See the LICENSE file for details.
 
 # Django imports
+from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import Q
 
@@ -104,6 +105,8 @@ class StageLeadTime(ProjectBaseModel):
 
 class OrderDetail(ProjectBaseModel):
     issue = models.OneToOneField("db.Issue", on_delete=models.CASCADE, related_name="order_detail")
+    category = models.CharField(max_length=255, blank=True)
+    quantity = models.PositiveIntegerField(null=True, blank=True, validators=[MinValueValidator(1)])
     vendor = models.ForeignKey(
         Vendor, on_delete=models.SET_NULL, null=True, blank=True, related_name="order_details"
     )

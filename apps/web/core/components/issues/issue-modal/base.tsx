@@ -59,7 +59,7 @@ export const CreateUpdateIssueModalBase = observer(function CreateUpdateIssueMod
     storeType = EIssuesStoreType.PROJECT;
   }
   // ref
-  const issueTitleRef = useRef<HTMLInputElement>(null);
+  const categoryInputRef = useRef<HTMLInputElement>(null);
   // states
   const [changesMade, setChangesMade] = useState<Partial<TIssue> | null>(null);
   const [createMore, setCreateMore] = useState(false);
@@ -68,6 +68,8 @@ export const CreateUpdateIssueModalBase = observer(function CreateUpdateIssueMod
   const [uploadedAssetIds, setUploadedAssetIds] = useState<string[]>([]);
   const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
   const [selectedVendorId, setSelectedVendorId] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [selectedQuantity, setSelectedQuantity] = useState<number | null>(null);
   // store hooks
   const { t } = useTranslation();
   const { workspaceSlug, projectId: routerProjectId, cycleId, moduleId, workItem } = useParams();
@@ -79,7 +81,7 @@ export const CreateUpdateIssueModalBase = observer(function CreateUpdateIssueMod
   const { fetchIssue } = useIssueDetail();
   const { allowedProjectIds, handleCreateUpdatePropertyValues, handleCreateSubWorkItem } = useIssueModal();
   const { getProjectByIdentifier } = useProject();
-  const { updateIssueOrderDetail } = useOrderDetail();
+  const { updateIssueOrderDetail, fetchIssueOrderDetail } = useOrderDetail();
   // current store details
   const { createIssue, updateIssue } = useIssuesActions(storeType);
   // derived values
@@ -94,10 +96,18 @@ export const CreateUpdateIssueModalBase = observer(function CreateUpdateIssueMod
     if (!projectId || issueId === undefined || !fetchIssueDetails) {
       // Set description to the issue description from the props if available
       setDescription(data?.description_html || "<p></p>");
+      setSelectedCategory(data?.name ?? "");
+      setSelectedQuantity(null);
       return;
     }
     const response = await fetchIssue(workspaceSlug.toString(), projectId.toString(), issueId);
     if (response) setDescription(response?.description_html || "<p></p>");
+
+    const orderDetail = await fetchIssueOrderDetail(workspaceSlug.toString(), projectId.toString(), issueId);
+    // legacy work items predate category/quantity and have no OrderDetail.category yet;
+    // fall back to the existing title so it carries forward instead of being silently discarded
+    setSelectedCategory(orderDetail?.category || response?.name || data?.name || "");
+    setSelectedQuantity(orderDetail?.quantity ?? null);
   };
 
   useEffect(() => {
@@ -237,10 +247,12 @@ export const CreateUpdateIssueModalBase = observer(function CreateUpdateIssueMod
         });
       }
 
-      // set the selected vendor on the newly created issue's order detail
-      if (selectedVendorId && response.id && response.project_id) {
+      // persist category/quantity (and vendor, if selected) on the newly created issue's order detail
+      if (response.id && response.project_id) {
         await updateIssueOrderDetail(workspaceSlug.toString(), response.project_id, response.id, {
-          vendor: selectedVendorId,
+          category: selectedCategory,
+          quantity: selectedQuantity,
+          ...(selectedVendorId ? { vendor: selectedVendorId } : {}),
         });
       }
 
@@ -257,10 +269,12 @@ export const CreateUpdateIssueModalBase = observer(function CreateUpdateIssueMod
         ),
       });
       if (!createMore) handleClose();
-      if (createMore && issueTitleRef) issueTitleRef?.current?.focus();
+      if (createMore && categoryInputRef) categoryInputRef?.current?.focus();
       setDescription("<p></p>");
       setChangesMade(null);
       setSelectedVendorId(null);
+      setSelectedCategory("");
+      setSelectedQuantity(null);
       return response;
     } catch (error: any) {
       setToast({
@@ -340,6 +354,11 @@ export const CreateUpdateIssueModalBase = observer(function CreateUpdateIssueMod
       if (isDraft) await draftIssues.updateIssue(workspaceSlug.toString(), data.id, payload);
       else if (updateIssue) await updateIssue(payload.project_id, data.id, payload);
 
+      await updateIssueOrderDetail(workspaceSlug.toString(), payload.project_id, data.id, {
+        category: selectedCategory,
+        quantity: selectedQuantity,
+      });
+
       // Run cycle, module, and property changes sequentially to avoid
       // optimistic store writes from racing against each other.
       await handleCycleChange(data, payload);
@@ -402,7 +421,7 @@ export const CreateUpdateIssueModalBase = observer(function CreateUpdateIssueMod
   if (!allowedProjectIds || allowedProjectIds.length === 0 || !activeProjectId) return null;
 
   const commonIssueModalProps: IssueFormProps = {
-    issueTitleRef: issueTitleRef,
+    categoryInputRef: categoryInputRef,
     data: {
       ...data,
       description_html: description,
@@ -424,6 +443,10 @@ export const CreateUpdateIssueModalBase = observer(function CreateUpdateIssueMod
     isProjectSelectionDisabled: isProjectSelectionDisabled,
     selectedVendorId: selectedVendorId,
     onVendorChange: setSelectedVendorId,
+    category: selectedCategory,
+    quantity: selectedQuantity,
+    onCategoryChange: setSelectedCategory,
+    onQuantityChange: setSelectedQuantity,
   };
 
   return (
