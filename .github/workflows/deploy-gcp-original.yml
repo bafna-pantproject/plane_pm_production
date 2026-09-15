@@ -3,14 +3,9 @@ name: Deploy to GCP VM
 # Redeploys plane-pm (project-management-tpp / asia-south1-a) whenever
 # `preview` is pushed, or on demand via the Actions tab ("Run workflow").
 #
-# This VM uses legacy per-instance SSH keys (not OS Login), so the
-# "githubdeployer" account authenticates with its own dedicated SSH
-# keypair (secrets.DEPLOY_SSH_KEY) rather than an IAM-mapped identity.
-# The GCP service account (secrets.GCP_SA_KEY) is only used to open the
-# IAP tunnel -- it never touches the VM's filesystem directly.
-#
 # One-time setup required before this will work -- see
-# deployments/gcp/README.md in this same PR/commit for the full runbook.
+# deployments/gcp/README.md in this same PR/commit for the full runbook
+# (service account, IAM roles, firewall rule, GitHub secrets).
 
 on:
   push:
@@ -35,21 +30,10 @@ jobs:
         with:
           project_id: ${{ vars.GCP_PROJECT_ID }}
 
-      - name: Write deploy SSH key
-        run: |
-          umask 077
-          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > deploy_key
-          chmod 600 deploy_key
-
       - name: Deploy over SSH (via IAP tunnel, no public SSH exposure needed)
         run: |
-          gcloud compute ssh "${{ vars.DEPLOY_SSH_USER }}@${{ vars.GCP_INSTANCE }}" \
+          gcloud compute ssh "${{ vars.GCP_INSTANCE }}" \
             --project="${{ vars.GCP_PROJECT_ID }}" \
             --zone="${{ vars.GCP_ZONE }}" \
             --tunnel-through-iap \
-            --ssh-key-file=deploy_key \
             --command="DEPLOY_DIR='${{ vars.DEPLOY_DIR }}' DEPLOY_BRANCH='${{ github.ref_name }}' bash '${{ vars.DEPLOY_DIR }}/deployments/gcp/deploy.sh'"
-
-      - name: Clean up key
-        if: always()
-        run: rm -f deploy_key

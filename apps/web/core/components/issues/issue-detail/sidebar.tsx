@@ -25,6 +25,7 @@ import {
 } from "@plane/propel/icons";
 import {
   cn,
+  composeOrderDetailName,
   getDate,
   renderFormattedDate,
   renderFormattedPayloadDate,
@@ -75,7 +76,7 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
   } = useIssueDetail();
   const { getUserDetails } = useMember();
   const { getStateById } = useProjectState();
-  const { workspaceVendors, createVendor } = useVendor();
+  const { workspaceVendors, createVendor, getVendorById } = useVendor();
   const { workspaceStyles, createStyle } = useStyle();
   const { workspacePurchaseOrders, createPurchaseOrder } = usePurchaseOrder();
   const { getOrderDetailByIssueId, fetchIssueOrderDetail, updateIssueOrderDetail } = useOrderDetail();
@@ -98,6 +99,17 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
   const stateDetails = getStateById(issue.state_id);
   const updateOrderDetail = (data: Parameters<typeof updateIssueOrderDetail>[3]) =>
     updateIssueOrderDetail(workspaceSlug, projectId, issueId, data);
+
+  // work items that use category/vendor/quantity display that composite as their name
+  // wherever the app just shows the plain title (kanban/list/calendar boards); keep it in
+  // sync when vendor changes here too, not just from the create/edit modal.
+  const handleVendorChange = (vendorId: string | null) => {
+    updateOrderDetail({ vendor: vendorId });
+    if (!orderDetail?.category) return;
+    const vendorName = vendorId ? getVendorById(vendorId)?.name : undefined;
+    const derivedName = composeOrderDetailName(orderDetail.category, vendorName, orderDetail.quantity);
+    if (derivedName) issueOperations.update(workspaceSlug, projectId, issueId, { name: derivedName });
+  };
 
   const minDate = issue.start_date ? getDate(issue.start_date) : null;
   minDate?.setDate(minDate.getDate());
@@ -281,7 +293,7 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
               <CatalogSelect
                 className="w-full grow"
                 value={orderDetail?.vendor}
-                onChange={(val) => updateOrderDetail({ vendor: val })}
+                onChange={handleVendorChange}
                 options={(workspaceVendors ?? []).map((vendor) => ({ id: vendor.id, label: vendor.name }))}
                 placeholder={t("common.vendor")}
                 disabled={!isEditable}

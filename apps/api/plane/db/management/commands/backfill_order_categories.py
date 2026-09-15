@@ -8,6 +8,7 @@ import re
 # Django imports
 from django.core.management.base import BaseCommand
 from django.db import transaction
+from django.db.models import Q
 
 # Module imports
 from plane.db.models import Issue, OrderDetail, Vendor
@@ -50,7 +51,13 @@ class Command(BaseCommand):
 
         # Skip issues that already have a category, whether from an earlier run of this
         # command or because someone has already re-saved them through the new form.
-        issues = issues.exclude(order_detail__category__gt="")
+        # order_detail is a reverse one-to-one, so issues with no OrderDetail row at all
+        # produce a NULL on the joined category column. `.exclude(category__gt="")` would
+        # silently drop those rows too (NULL > '' is unknown, and NOT unknown is still
+        # unknown, so Postgres's WHERE excludes them) - which is most legacy issues, since
+        # they never had an OrderDetail row created. Filter explicitly for "no row yet" or
+        # "row exists but category is blank" instead.
+        issues = issues.filter(Q(order_detail__isnull=True) | Q(order_detail__category=""))
 
         # One vendor lookup per workspace instead of one query per issue.
         vendors_by_workspace: dict[str, dict[str, Vendor]] = {}
@@ -72,9 +79,13 @@ class Command(BaseCommand):
         for issue in issues.iterator():
             scanned += 1
             title = (issue.name or "").strip()
-            # maxsplit=2 so a hyphen inside the category or vendor text itself doesn't
-            # shift the quantity segment out of place.
-            parts = [part.strip() for part in title.split(" - ", 2)]
+            # rsplit from the right, maxsplit=2, so we always peel off exactly the last
+            # two segments as vendor and quantity. Category names can themselves contain
+            # " - " (e.g. "Steel Rods - Cold Rolled"), and a left-anchored split() would
+            # mistake that embedded hyphen for the category/vendor boundary, shifting
+            # everything after it out of place. Vendor names and the quantity segment are
+            # never themselves hyphenated, so anchoring from the back is unambiguous.
+            parts = [part.strip() for part in title.rsplit(" - ", 2)]
 
             category = parts[0] if parts and parts[0] else title
             vendor_name = parts[1] if len(parts) > 1 and parts[1] else None

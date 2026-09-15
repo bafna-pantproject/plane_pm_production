@@ -13,6 +13,8 @@ import { TextArea } from "@plane/ui";
 // types
 import { cn } from "@plane/utils";
 import useDebounce from "@/hooks/use-debounce";
+import { useOrderDetail } from "@/hooks/store/use-order-detail";
+import { useVendor } from "@/hooks/store/use-vendor";
 import type { TIssueOperations } from "./issue-detail";
 // hooks
 
@@ -52,6 +54,17 @@ export const IssueTitleInput = observer(function IssueTitleInput(props: IssueTit
   const currentTitleRef = useRef(title);
   // hooks
   const debouncedValue = useDebounce(title, 1500);
+  // order detail (category/vendor/quantity) hooks
+  const { getOrderDetailByIssueId, fetchIssueOrderDetail } = useOrderDetail();
+  const { getVendorById } = useVendor();
+  const orderDetail = getOrderDetailByIssueId(issueId);
+
+  // the project-wide bulk fetch (project-wrapper.tsx) may not have completed yet when this
+  // mounts on its own (e.g. deep-linking straight into an issue), so backstop it here too.
+  useEffect(() => {
+    if (!orderDetail) fetchIssueOrderDetail(workspaceSlug, projectId, issueId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workspaceSlug, projectId, issueId]);
 
   useEffect(() => {
     if (value) {
@@ -141,6 +154,31 @@ export const IssueTitleInput = observer(function IssueTitleInput(props: IssueTit
     },
     [setIsSubmitting]
   );
+
+  // work items that have been through the category/vendor/quantity form (i.e. every work
+  // item created or edited since that change shipped) show those 3 values instead of the
+  // free-form title. Legacy/generic work items with no category set yet keep the title.
+  if (orderDetail?.category) {
+    const vendor = orderDetail.vendor ? getVendorById(orderDetail.vendor) : null;
+    return (
+      <div className={cn("flex flex-wrap items-baseline gap-x-6 gap-y-1 px-3", containerClassName)}>
+        <div className="flex items-baseline gap-1.5">
+          <span className="text-13 font-medium text-secondary">{t("common.category")}:</span>
+          <span className="text-20 font-medium">{orderDetail.category}</span>
+        </div>
+        <div className="flex items-baseline gap-1.5">
+          <span className="text-13 font-medium text-secondary">{t("common.vendor")}:</span>
+          <span className="text-20 font-medium">{vendor?.name ?? "—"}</span>
+        </div>
+        <div className="flex items-baseline gap-1.5">
+          <span className="text-13 font-medium text-secondary">{t("common.quantity")}:</span>
+          <span className="text-20 font-medium">
+            {orderDetail.quantity ? `${orderDetail.quantity} units` : "—"}
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   if (disabled) return <div className="text-20 font-medium whitespace-pre-line">{title}</div>;
 

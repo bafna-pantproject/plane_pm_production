@@ -9,6 +9,21 @@ import { set } from "lodash-es";
 import { DEFAULT_WORK_ITEM_FORM_VALUES } from "@plane/constants";
 import type { IPartialProject, ISearchIssueResponse, IState, TIssue } from "@plane/types";
 
+// Work items are identified by category/vendor/quantity instead of a free-form title.
+// Every place that can change one of those 3 values (the create/edit modal, the issue
+// detail sidebar's vendor dropdown) recomputes the work item's name with this so the
+// board/list/kanban views - which only ever display the plain name field - stay in sync.
+export const composeOrderDetailName = (
+  category: string | null | undefined,
+  vendorName: string | null | undefined,
+  quantity: number | null | undefined
+): string | null => {
+  const parts = [category || undefined, vendorName || undefined, quantity ? `${quantity} units` : undefined].filter(
+    (part): part is string => Boolean(part)
+  );
+  return parts.length > 0 ? parts.join(" - ") : null;
+};
+
 export const getUpdateFormDataForReset = (projectId: string | null | undefined, formData: Partial<TIssue>) => ({
   ...DEFAULT_WORK_ITEM_FORM_VALUES,
   project_id: projectId,

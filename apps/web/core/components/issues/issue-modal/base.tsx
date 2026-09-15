@@ -98,6 +98,7 @@ export const CreateUpdateIssueModalBase = observer(function CreateUpdateIssueMod
       setDescription(data?.description_html || "<p></p>");
       setSelectedCategory(data?.name ?? "");
       setSelectedQuantity(null);
+      setSelectedVendorId(null);
       return;
     }
     const response = await fetchIssue(workspaceSlug.toString(), projectId.toString(), issueId);
@@ -108,6 +109,7 @@ export const CreateUpdateIssueModalBase = observer(function CreateUpdateIssueMod
     // fall back to the existing title so it carries forward instead of being silently discarded
     setSelectedCategory(orderDetail?.category || response?.name || data?.name || "");
     setSelectedQuantity(orderDetail?.quantity ?? null);
+    setSelectedVendorId(orderDetail?.vendor ?? null);
   };
 
   useEffect(() => {
@@ -357,6 +359,7 @@ export const CreateUpdateIssueModalBase = observer(function CreateUpdateIssueMod
       await updateIssueOrderDetail(workspaceSlug.toString(), payload.project_id, data.id, {
         category: selectedCategory,
         quantity: selectedQuantity,
+        vendor: selectedVendorId,
       });
 
       // Run cycle, module, and property changes sequentially to avoid

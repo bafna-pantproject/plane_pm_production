@@ -249,7 +249,7 @@ export const IssueDefaultProperties = observer(function IssueDefaultProperties(p
           )}
         />
       )}
-      {!id && onVendorChange && (
+      {onVendorChange && (
         <div className="h-7">
           <CatalogSelect
             value={selectedVendorId}

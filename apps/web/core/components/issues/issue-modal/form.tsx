@@ -22,6 +22,7 @@ import type { TIssue, TWorkspaceDraftIssue } from "@plane/types";
 // hooks
 import { ToggleSwitch } from "@plane/ui";
 import {
+  composeOrderDetailName,
   convertWorkItemDataToSearchResponse,
   getUpdateFormDataForReset,
   cn,
@@ -213,15 +214,14 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
   }, [data, projectId]);
 
   // derive the work item's name from category, vendor, and quantity since
-  // there is no longer a free-form title field on the create/update form
-  const vendorIdForDerivedName = data?.id ? data?.vendor_id : selectedVendorId;
-  const vendorNameForDerivedName = vendorIdForDerivedName ? getVendorById(vendorIdForDerivedName)?.name : undefined;
+  // there is no longer a free-form title field on the create/update form.
+  // selectedVendorId is editable in both create and update mode (see default-properties.tsx),
+  // pre-filled from the existing OrderDetail when editing (see base.tsx's fetchIssueDetail).
+  const vendorNameForDerivedName = selectedVendorId ? getVendorById(selectedVendorId)?.name : undefined;
   useEffect(() => {
-    const nameParts = [category, vendorNameForDerivedName, quantity ? `${quantity} units` : undefined].filter(
-      Boolean
-    );
-    if (nameParts.length === 0) return;
-    setValue("name", nameParts.join(" - "), { shouldDirty: true, shouldValidate: true });
+    const derivedName = composeOrderDetailName(category, vendorNameForDerivedName, quantity);
+    if (!derivedName) return;
+    setValue("name", derivedName, { shouldDirty: true, shouldValidate: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [category, quantity, vendorNameForDerivedName]);
 
