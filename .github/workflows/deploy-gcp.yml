@@ -40,6 +40,7 @@ jobs:
           umask 077
           printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > deploy_key
           chmod 600 deploy_key
+          ssh-keygen -y -f deploy_key > deploy_key.pub
 
       - name: Deploy over SSH (via IAP tunnel, no public SSH exposure needed)
         run: |
@@ -48,8 +49,9 @@ jobs:
             --zone="${{ vars.GCP_ZONE }}" \
             --tunnel-through-iap \
             --ssh-key-file=deploy_key \
+            --quiet \
             --command="DEPLOY_DIR='${{ vars.DEPLOY_DIR }}' DEPLOY_BRANCH='${{ github.ref_name }}' bash '${{ vars.DEPLOY_DIR }}/deployments/gcp/deploy.sh'"
 
       - name: Clean up key
         if: always()
-        run: rm -f deploy_key
+        run: rm -f deploy_key deploy_key.pub
