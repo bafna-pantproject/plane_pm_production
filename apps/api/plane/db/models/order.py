@@ -84,25 +84,6 @@ class PurchaseOrder(WorkspaceBaseModel):
         return str(self.po_number)
 
 
-class StageLeadTime(ProjectBaseModel):
-    state = models.OneToOneField("db.State", on_delete=models.CASCADE, related_name="stage_lead_time")
-    lead_time_days = models.PositiveIntegerField(default=1)
-
-    class Meta:
-        verbose_name = "Stage Lead Time"
-        verbose_name_plural = "Stage Lead Times"
-        db_table = "stage_lead_times"
-        ordering = ("state__sequence",)
-
-    def save(self, *args, **kwargs):
-        if self._state.adding and not self.project_id:
-            self.project = self.state.project
-        super().save(*args, **kwargs)
-
-    def __str__(self):
-        return f"{self.state.name} <{self.lead_time_days}d>"
-
-
 class OrderDetail(ProjectBaseModel):
     issue = models.OneToOneField("db.Issue", on_delete=models.CASCADE, related_name="order_detail")
     category = models.CharField(max_length=255, blank=True)
@@ -120,8 +101,6 @@ class OrderDetail(ProjectBaseModel):
     )
     requested_delivery_date = models.DateField(null=True, blank=True)
     vendor_promised_date = models.DateField(null=True, blank=True)
-    current_stage_entered_at = models.DateTimeField(null=True, blank=True)
-    tentative_completion_date = models.DateField(null=True, blank=True)
 
     class Meta:
         verbose_name = "Order Detail"
@@ -136,3 +115,31 @@ class OrderDetail(ProjectBaseModel):
 
     def __str__(self):
         return f"Order detail <{self.issue_id}>"
+
+
+class TaskStateTarget(ProjectBaseModel):
+    issue = models.ForeignKey("db.Issue", on_delete=models.CASCADE, related_name="state_targets")
+    state = models.ForeignKey("db.State", on_delete=models.CASCADE, related_name="issue_targets")
+    target_date = models.DateField(null=True, blank=True)
+    entered_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["issue", "state"],
+                condition=Q(deleted_at__isnull=True),
+                name="task_state_target_unique_issue_state_when_not_deleted",
+            )
+        ]
+        verbose_name = "Task State Target"
+        verbose_name_plural = "Task State Targets"
+        db_table = "task_state_targets"
+        ordering = ("state__sequence",)
+
+    def save(self, *args, **kwargs):
+        if self._state.adding and not self.project_id:
+            self.project = self.issue.project
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"Task state target <{self.issue_id}:{self.state_id}>"

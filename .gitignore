@@ -2,6 +2,7 @@ node_modules
 Claude*
 .next
 .yarn
+github-deployer-key*
 
 ### NextJS ###
 # Dependencies

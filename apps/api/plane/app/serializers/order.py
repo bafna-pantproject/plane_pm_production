@@ -4,7 +4,7 @@
 
 # Module imports
 from .base import BaseSerializer
-from plane.db.models import OrderDetail, PurchaseOrder, StageLeadTime, Style, Vendor
+from plane.db.models import OrderDetail, PurchaseOrder, Style, TaskStateTarget, Vendor
 
 
 class VendorSerializer(BaseSerializer):
@@ -38,13 +38,6 @@ class PurchaseOrderSerializer(BaseSerializer):
         read_only_fields = ["workspace"]
 
 
-class StageLeadTimeSerializer(BaseSerializer):
-    class Meta:
-        model = StageLeadTime
-        fields = ["id", "workspace_id", "project_id", "state", "lead_time_days"]
-        read_only_fields = ["workspace", "project", "state"]
-
-
 class OrderDetailSerializer(BaseSerializer):
     class Meta:
         model = OrderDetail
@@ -60,7 +53,12 @@ class OrderDetailSerializer(BaseSerializer):
             "purchase_order",
             "requested_delivery_date",
             "vendor_promised_date",
-            "current_stage_entered_at",
-            "tentative_completion_date",
         ]
-        read_only_fields = ["workspace", "project", "issue", "current_stage_entered_at", "tentative_completion_date"]
+        read_only_fields = ["workspace", "project", "issue"]
+
+
+class TaskStateTargetSerializer(BaseSerializer):
+    class Meta:
+        model = TaskStateTarget
+        fields = ["id", "workspace_id", "project_id", "issue", "state", "target_date", "entered_at"]
+        read_only_fields = ["workspace", "project", "issue", "state", "entered_at"]

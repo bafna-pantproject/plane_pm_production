@@ -70,7 +70,6 @@ export type TBaseIssue = {
   purchase_order_id?: string | null;
   requested_delivery_date?: string | null;
   vendor_promised_date?: string | null;
-  tentative_completion_date?: string | null;
 
   created_at: string;
   updated_at: string;

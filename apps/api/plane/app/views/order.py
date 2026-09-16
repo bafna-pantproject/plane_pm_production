@@ -12,11 +12,11 @@ from plane.app.permissions import ROLE, allow_permission
 from plane.app.serializers import (
     OrderDetailSerializer,
     PurchaseOrderSerializer,
-    StageLeadTimeSerializer,
     StyleSerializer,
+    TaskStateTargetSerializer,
     VendorSerializer,
 )
-from plane.db.models import OrderDetail, PurchaseOrder, StageLeadTime, Style, Vendor, Workspace
+from plane.db.models import OrderDetail, PurchaseOrder, State, Style, TaskStateTarget, Vendor, Workspace
 
 
 class VendorViewSet(BaseViewSet):
@@ -140,33 +140,50 @@ class PurchaseOrderViewSet(BaseViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class StageLeadTimeViewSet(BaseViewSet):
-    serializer_class = StageLeadTimeSerializer
-    model = StageLeadTime
+class IssueStateTargetsEndpoint(BaseAPIView):
+    @allow_permission([ROLE.ADMIN, ROLE.MEMBER, ROLE.GUEST])
+    def get(self, request, slug, project_id, issue_id):
+        targets = TaskStateTarget.objects.filter(
+            workspace__slug=slug, project_id=project_id, issue_id=issue_id
+        ).select_related("state")
+        return Response(TaskStateTargetSerializer(targets, many=True).data, status=status.HTTP_200_OK)
 
-    def get_queryset(self):
-        return self.filter_queryset(
-            super()
-            .get_queryset()
-            .filter(workspace__slug=self.kwargs.get("slug"))
-            .filter(project_id=self.kwargs.get("project_id"))
-            .filter(
-                project__project_projectmember__member=self.request.user,
-                project__project_projectmember__is_active=True,
-            )
-            .select_related("state")
-            .order_by("state__sequence")
-            .distinct()
+    @allow_permission([ROLE.ADMIN, ROLE.MEMBER])
+    def post(self, request, slug, project_id, issue_id):
+        state_id = request.data.get("state")
+        if not State.objects.filter(pk=state_id, project_id=project_id).exists():
+            return Response({"error": "State is not valid, please pass a valid state_id"}, status=status.HTTP_400_BAD_REQUEST)
+        target, _ = TaskStateTarget.objects.get_or_create(
+            issue_id=issue_id, state_id=state_id, defaults={"project_id": project_id}
         )
-
-    @allow_permission([ROLE.ADMIN])
-    def partial_update(self, request, slug, project_id, pk):
-        stage_lead_time = StageLeadTime.objects.get(pk=pk, project_id=project_id, workspace__slug=slug)
-        serializer = StageLeadTimeSerializer(stage_lead_time, data=request.data, partial=True)
+        serializer = TaskStateTargetSerializer(
+            target, data={"target_date": request.data.get("target_date")}, partial=True
+        )
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class IssueStateTargetDetailEndpoint(BaseAPIView):
+    @allow_permission([ROLE.ADMIN, ROLE.MEMBER])
+    def patch(self, request, slug, project_id, issue_id, pk):
+        target = TaskStateTarget.objects.get(pk=pk, issue_id=issue_id, project_id=project_id, workspace__slug=slug)
+        serializer = TaskStateTargetSerializer(target, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            target.refresh_from_db()
+            # Sparse cleanup: an empty row (no target, no recorded entry) has nothing left to show.
+            if target.target_date is None and target.entered_at is None:
+                target.delete()
+                return Response(status=status.HTTP_204_NO_CONTENT)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @allow_permission([ROLE.ADMIN, ROLE.MEMBER])
+    def delete(self, request, slug, project_id, issue_id, pk):
+        TaskStateTarget.objects.filter(pk=pk, issue_id=issue_id, project_id=project_id, workspace__slug=slug).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class IssueOrderDetailEndpoint(BaseAPIView):

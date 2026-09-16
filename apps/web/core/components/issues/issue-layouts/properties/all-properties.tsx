@@ -10,7 +10,7 @@ import { xor } from "lodash-es";
 import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
 // icons
-import { CalendarCheck2, Paperclip } from "lucide-react";
+import { Paperclip } from "lucide-react";
 // i18n
 import { useTranslation } from "@plane/i18n";
 import { LinkIcon, StartDatePropertyIcon, ViewsIcon, DueDatePropertyIcon } from "@plane/propel/icons";
@@ -20,7 +20,6 @@ import type { TIssue, IIssueDisplayProperties, TIssuePriorities } from "@plane/t
 import {
   cn,
   getDate,
-  renderFormattedDate,
   renderFormattedPayloadDate,
   generateWorkItemLink,
   shouldHighlightIssueDueDate,
@@ -500,21 +499,6 @@ export const IssueProperties = observer(function IssueProperties(props: IIssuePr
           maxRender={3}
         />
       </WithDisplayPropertiesHOC>
-
-      {/* tentative completion date - always shown once the order has one, not user-togglable */}
-      {issue?.tentative_completion_date && (
-        <Tooltip
-          tooltipHeading={t("common.tentative_completion_date")}
-          tooltipContent={renderFormattedDate(issue.tentative_completion_date) ?? ""}
-          isMobile={isMobile}
-          renderByDefault={false}
-        >
-          <div className="flex h-5 flex-shrink-0 items-center justify-center gap-2 overflow-hidden rounded-sm border-[0.5px] border-strong px-2.5 py-1">
-            <CalendarCheck2 className="h-3 w-3 flex-shrink-0" strokeWidth={2} />
-            <div className="text-caption-sm-regular">{renderFormattedDate(issue.tentative_completion_date)}</div>
-          </div>
-        </Tooltip>
-      )}
     </div>
   );
 });

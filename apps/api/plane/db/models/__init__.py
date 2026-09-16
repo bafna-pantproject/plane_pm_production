@@ -48,7 +48,7 @@ from .issue import (
 )
 from .module import Module, ModuleIssue, ModuleLink, ModuleMember, ModuleUserProperties
 from .notification import EmailNotificationLog, Notification, UserNotificationPreference
-from .order import OrderDetail, PurchaseOrder, StageLeadTime, Style, Vendor
+from .order import OrderDetail, PurchaseOrder, Style, TaskStateTarget, Vendor
 from .page import Page, PageLabel, PageLog, ProjectPage, PageVersion
 from .project import (
     Project,

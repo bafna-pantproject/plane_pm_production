@@ -56,8 +56,8 @@ import type { IOrderDetailStore } from "./order-detail.store";
 import { OrderDetailStore } from "./order-detail.store";
 import type { IPurchaseOrderStore } from "./purchase-order.store";
 import { PurchaseOrderStore } from "./purchase-order.store";
-import type { IStageLeadTimeStore } from "./stage-lead-time.store";
-import { StageLeadTimeStore } from "./stage-lead-time.store";
+import type { ITaskStateTargetStore } from "./task-state-target.store";
+import { TaskStateTargetStore } from "./task-state-target.store";
 import type { IStyleStore } from "./style.store";
 import { StyleStore } from "./style.store";
 import type { IVendorStore } from "./vendor.store";
@@ -116,7 +116,7 @@ export class CoreRootStore {
   vendor: IVendorStore;
   style: IStyleStore;
   purchaseOrder: IPurchaseOrderStore;
-  stageLeadTime: IStageLeadTimeStore;
+  taskStateTarget: ITaskStateTargetStore;
   orderDetail: IOrderDetailStore;
 
   constructor() {
@@ -153,7 +153,7 @@ export class CoreRootStore {
     this.vendor = new VendorStore(this);
     this.style = new StyleStore(this);
     this.purchaseOrder = new PurchaseOrderStore(this);
-    this.stageLeadTime = new StageLeadTimeStore(this);
+    this.taskStateTarget = new TaskStateTargetStore(this);
     this.orderDetail = new OrderDetailStore(this);
   }
 
@@ -192,7 +192,7 @@ export class CoreRootStore {
     this.vendor = new VendorStore(this);
     this.style = new StyleStore(this);
     this.purchaseOrder = new PurchaseOrderStore(this);
-    this.stageLeadTime = new StageLeadTimeStore(this);
+    this.taskStateTarget = new TaskStateTargetStore(this);
     this.orderDetail = new OrderDetailStore(this);
   }
 }

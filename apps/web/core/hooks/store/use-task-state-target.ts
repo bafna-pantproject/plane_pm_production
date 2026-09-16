@@ -8,10 +8,10 @@ import { useContext } from "react";
 // mobx store
 import { StoreContext } from "@/lib/store-context";
 // types
-import type { IStageLeadTimeStore } from "@/store/stage-lead-time.store";
+import type { ITaskStateTargetStore } from "@/store/task-state-target.store";
 
-export const useStageLeadTime = (): IStageLeadTimeStore => {
+export const useTaskStateTarget = (): ITaskStateTargetStore => {
   const context = useContext(StoreContext);
-  if (context === undefined) throw new Error("useStageLeadTime must be used within StoreProvider");
-  return context.stageLeadTime;
+  if (context === undefined) throw new Error("useTaskStateTarget must be used within StoreProvider");
+  return context.taskStateTarget;
 };

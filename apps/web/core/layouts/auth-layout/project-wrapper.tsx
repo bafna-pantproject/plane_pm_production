@@ -37,7 +37,6 @@ import { useProject } from "@/hooks/store/use-project";
 import { useProjectState } from "@/hooks/store/use-project-state";
 import { useProjectView } from "@/hooks/store/use-project-view";
 import { usePurchaseOrder } from "@/hooks/store/use-purchase-order";
-import { useStageLeadTime } from "@/hooks/store/use-stage-lead-time";
 import { useStyle } from "@/hooks/store/use-style";
 import { useVendor } from "@/hooks/store/use-vendor";
 import { useUser, useUserPermissions } from "@/hooks/store/user";
@@ -72,7 +71,6 @@ export const ProjectAuthWrapper = observer(function ProjectAuthWrapper(props: IP
   const { fetchWorkspaceVendors } = useVendor();
   const { fetchWorkspaceStyles } = useStyle();
   const { fetchWorkspacePurchaseOrders } = usePurchaseOrder();
-  const { fetchProjectStageLeadTimes } = useStageLeadTime();
   const { fetchProjectOrderDetails } = useOrderDetail();
   // derived values
   const hasPermissionToCurrentProject = allowPermissions(
@@ -158,11 +156,7 @@ export const ProjectAuthWrapper = observer(function ProjectAuthWrapper(props: IP
     revalidateIfStale: false,
     revalidateOnFocus: false,
   });
-  // fetching project stage lead times and order details
-  useSWR(`PROJECT_STAGE_LEAD_TIMES_${projectId}`, () => fetchProjectStageLeadTimes(workspaceSlug, projectId), {
-    revalidateIfStale: false,
-    revalidateOnFocus: false,
-  });
+  // fetching project order details
   useSWR(`PROJECT_ORDER_DETAILS_${projectId}`, () => fetchProjectOrderDetails(workspaceSlug, projectId), {
     revalidateIfStale: false,
     revalidateOnFocus: false,

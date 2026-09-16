@@ -88,7 +88,8 @@ from .order import (
     VendorViewSet,
     StyleViewSet,
     PurchaseOrderViewSet,
-    StageLeadTimeViewSet,
+    IssueStateTargetsEndpoint,
+    IssueStateTargetDetailEndpoint,
     IssueOrderDetailEndpoint,
     ProjectOrderDetailsEndpoint,
 )

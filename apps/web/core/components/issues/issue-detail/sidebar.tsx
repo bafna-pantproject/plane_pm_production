@@ -46,6 +46,7 @@ import { useOrderDetail } from "@/hooks/store/use-order-detail";
 import { useProject } from "@/hooks/store/use-project";
 import { useProjectState } from "@/hooks/store/use-project-state";
 import { usePurchaseOrder } from "@/hooks/store/use-purchase-order";
+import { useTaskStateTarget } from "@/hooks/store/use-task-state-target";
 import { useStyle } from "@/hooks/store/use-style";
 import { useVendor } from "@/hooks/store/use-vendor";
 // components
@@ -75,17 +76,21 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
     issue: { getIssueById },
   } = useIssueDetail();
   const { getUserDetails } = useMember();
-  const { getStateById } = useProjectState();
+  const { getStateById, getProjectStates } = useProjectState();
   const { workspaceVendors, createVendor, getVendorById } = useVendor();
   const { workspaceStyles, createStyle } = useStyle();
   const { workspacePurchaseOrders, createPurchaseOrder } = usePurchaseOrder();
   const { getOrderDetailByIssueId, fetchIssueOrderDetail, updateIssueOrderDetail } = useOrderDetail();
+  const { getIssueStateTargets, fetchIssueStateTargets, setIssueStateTarget } = useTaskStateTarget();
   const orderDetail = getOrderDetailByIssueId(issueId);
+  const stateTargets = getIssueStateTargets(issueId);
+  const projectStates = getProjectStates(projectId);
 
   // the project-wide bulk fetch (project-wrapper.tsx) may not have completed yet when the
   // sidebar first mounts, so backstop it with a fetch scoped to just this issue.
   useEffect(() => {
     if (!orderDetail) fetchIssueOrderDetail(workspaceSlug, projectId, issueId);
+    if (!stateTargets) fetchIssueStateTargets(workspaceSlug, projectId, issueId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workspaceSlug, projectId, issueId]);
 
@@ -363,14 +368,42 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
                 clearIconClassName="h-3 w-3 hidden group-hover:inline"
               />
             </SidebarPropertyListItem>
+          </div>
 
-            <SidebarPropertyListItem icon={CalendarCheck2} label={t("common.tentative_completion_date")}>
-              <span className="px-2 text-body-xs-regular text-tertiary">
-                {orderDetail?.tentative_completion_date
-                  ? renderFormattedDate(orderDetail.tentative_completion_date)
-                  : "—"}
-              </span>
-            </SidebarPropertyListItem>
+          <h5 className="mt-5 text-body-xs-medium">{t("common.state_targets")}</h5>
+          <div className={`mt-4 mb-2 space-y-2.5 truncate ${!isEditable ? "opacity-60" : ""}`}>
+            {(projectStates ?? []).map((state) => {
+              const stateTarget = stateTargets?.find((target) => target.state === state.id);
+              return (
+                <SidebarPropertyListItem key={state.id} icon={CalendarCheck2} label={state.name}>
+                  <DateDropdown
+                    placeholder={t("common.target_date")}
+                    value={stateTarget?.target_date ?? null}
+                    onChange={(val) =>
+                      setIssueStateTarget(
+                        workspaceSlug,
+                        projectId,
+                        issueId,
+                        state.id,
+                        val ? renderFormattedPayloadDate(val) : null
+                      )
+                    }
+                    disabled={!isEditable}
+                    buttonVariant="transparent-with-text"
+                    className="group w-full grow"
+                    buttonContainerClassName="w-full text-left h-7.5"
+                    buttonClassName={`text-body-xs-regular ${stateTarget?.target_date ? "" : "text-placeholder"}`}
+                    hideIcon
+                    clearIconClassName="h-3 w-3 hidden group-hover:inline"
+                  />
+                  <span className="shrink-0 px-2 text-body-xs-regular text-tertiary">
+                    {stateTarget?.entered_at
+                      ? `${t("common.entered_at")}: ${renderFormattedDate(stateTarget.entered_at)}`
+                      : ""}
+                  </span>
+                </SidebarPropertyListItem>
+              );
+            })}
           </div>
         </div>
       </div>

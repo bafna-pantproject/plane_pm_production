@@ -34,14 +34,6 @@ export interface TPurchaseOrder {
   notes: string;
 }
 
-export interface TStageLeadTime {
-  readonly id: string;
-  workspace_id: string;
-  project_id: string;
-  state: string;
-  lead_time_days: number;
-}
-
 export interface TOrderDetail {
   readonly id: string;
   workspace_id: string;
@@ -54,6 +46,14 @@ export interface TOrderDetail {
   purchase_order: string | null;
   requested_delivery_date: string | null;
   vendor_promised_date: string | null;
-  readonly current_stage_entered_at: string | null;
-  readonly tentative_completion_date: string | null;
+}
+
+export interface TTaskStateTarget {
+  readonly id: string;
+  workspace_id: string;
+  project_id: string;
+  readonly issue: string;
+  readonly state: string;
+  target_date: string | null;
+  readonly entered_at: string | null;
 }

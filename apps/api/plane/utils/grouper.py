@@ -135,7 +135,6 @@ def issue_on_results(
         "purchase_order_id",
         "requested_delivery_date",
         "vendor_promised_date",
-        "tentative_completion_date",
     ]
 
     if group_by in FIELD_MAPPER:

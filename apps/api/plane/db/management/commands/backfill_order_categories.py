@@ -155,8 +155,6 @@ class Command(BaseCommand):
 
         with transaction.atomic():
             OrderDetail.objects.bulk_update(to_update, ["category", "vendor", "quantity"], batch_size=500)
-            # .create() one at a time (not bulk_create) so OrderDetail's post_save signal
-            # still runs and seeds current_stage_entered_at / tentative_completion_date.
             for issue, category, vendor, quantity in to_create:
                 OrderDetail.objects.create(
                     issue=issue,
