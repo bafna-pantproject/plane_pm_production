@@ -17,9 +17,12 @@ import type { CoreRootStore } from "./root.store";
 export interface IOrderDetailStore {
   fetchedMap: Record<string, boolean>;
   orderDetailByIssueId: Record<string, TOrderDetail>;
+  categoriesByProjectId: Record<string, string[]>;
   getOrderDetailByIssueId: (issueId: string) => TOrderDetail | null;
+  getProjectOrderDetailCategories: (projectId: string) => string[] | undefined;
   fetchProjectOrderDetails: (workspaceSlug: string, projectId: string) => Promise<TOrderDetail[]>;
   fetchIssueOrderDetail: (workspaceSlug: string, projectId: string, issueId: string) => Promise<TOrderDetail>;
+  fetchProjectOrderDetailCategories: (workspaceSlug: string, projectId: string) => Promise<string[]>;
   updateIssueOrderDetail: (
     workspaceSlug: string,
     projectId: string,
@@ -31,15 +34,18 @@ export interface IOrderDetailStore {
 export class OrderDetailStore implements IOrderDetailStore {
   rootStore;
   orderDetailByIssueId: Record<string, TOrderDetail> = {};
+  categoriesByProjectId: Record<string, string[]> = {};
   fetchedMap: Record<string, boolean> = {};
   orderDetailService;
 
   constructor(_rootStore: CoreRootStore) {
     makeObservable(this, {
       orderDetailByIssueId: observable,
+      categoriesByProjectId: observable,
       fetchedMap: observable,
       fetchProjectOrderDetails: action,
       fetchIssueOrderDetail: action,
+      fetchProjectOrderDetailCategories: action,
       updateIssueOrderDetail: action,
     });
 
@@ -49,6 +55,10 @@ export class OrderDetailStore implements IOrderDetailStore {
 
   getOrderDetailByIssueId = computedFn(
     (issueId: string): TOrderDetail | null => this.orderDetailByIssueId?.[issueId] ?? null
+  );
+
+  getProjectOrderDetailCategories = computedFn(
+    (projectId: string): string[] | undefined => this.categoriesByProjectId?.[projectId]
   );
 
   fetchProjectOrderDetails = async (workspaceSlug: string, projectId: string) =>
@@ -63,6 +73,12 @@ export class OrderDetailStore implements IOrderDetailStore {
   fetchIssueOrderDetail = async (workspaceSlug: string, projectId: string, issueId: string) =>
     await this.orderDetailService.getIssueOrderDetail(workspaceSlug, projectId, issueId).then((response) => {
       runInAction(() => set(this.orderDetailByIssueId, [issueId], response));
+      return response;
+    });
+
+  fetchProjectOrderDetailCategories = async (workspaceSlug: string, projectId: string) =>
+    await this.orderDetailService.getProjectOrderDetailCategories(workspaceSlug, projectId).then((response) => {
+      runInAction(() => set(this.categoriesByProjectId, [projectId], response));
       return response;
     });
 

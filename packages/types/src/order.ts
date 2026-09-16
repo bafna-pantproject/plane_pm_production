@@ -45,7 +45,6 @@ export interface TOrderDetail {
   style: string | null;
   purchase_order: string | null;
   requested_delivery_date: string | null;
-  vendor_promised_date: string | null;
 }
 
 export interface TTaskStateTarget {

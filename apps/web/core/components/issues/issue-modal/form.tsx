@@ -77,6 +77,8 @@ export interface IssueFormProps {
   quantity: number | null;
   onCategoryChange: (category: string) => void;
   onQuantityChange: (quantity: number | null) => void;
+  selectedRequestedDeliveryDate?: string | null;
+  onRequestedDeliveryDateChange?: (date: string | null) => void;
 }
 
 export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormProps) {
@@ -107,6 +109,8 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
     quantity,
     onCategoryChange,
     onQuantityChange,
+    selectedRequestedDeliveryDate = null,
+    onRequestedDeliveryDateChange,
   } = props;
 
   // states
@@ -215,7 +219,7 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
 
   // derive the work item's name from category, vendor, and quantity since
   // there is no longer a free-form title field on the create/update form.
-  // selectedVendorId is editable in both create and update mode (see default-properties.tsx),
+  // selectedVendorId is editable in both create and update mode (see category-quantity-input.tsx),
   // pre-filled from the existing OrderDetail when editing (see base.tsx's fetchIssueDetail).
   const vendorNameForDerivedName = selectedVendorId ? getVendorById(selectedVendorId)?.name : undefined;
   useEffect(() => {
@@ -435,6 +439,9 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
                   handleFormChange={handleFormChange}
                   categoryError={categoryError}
                   quantityError={quantityError}
+                  workspaceSlug={workspaceSlug?.toString()}
+                  selectedVendorId={selectedVendorId}
+                  onVendorChange={onVendorChange}
                 />
               </div>
             </div>
@@ -481,14 +488,12 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
                   projectId={projectId}
                   workspaceSlug={workspaceSlug?.toString()}
                   selectedParentIssue={selectedParentIssue}
-                  startDate={watch("start_date")}
-                  targetDate={watch("target_date")}
                   parentId={watch("parent_id")}
                   isDraft={isDraft}
                   handleFormChange={handleFormChange}
                   setSelectedParentIssue={setSelectedParentIssue}
-                  selectedVendorId={selectedVendorId}
-                  onVendorChange={onVendorChange}
+                  selectedRequestedDeliveryDate={selectedRequestedDeliveryDate}
+                  onRequestedDeliveryDateChange={onRequestedDeliveryDateChange}
                 />
               </div>
               {showActionButtons && (

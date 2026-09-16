@@ -134,7 +134,7 @@ def issue_on_results(
         "style_id",
         "purchase_order_id",
         "requested_delivery_date",
-        "vendor_promised_date",
+        "category",
     ]
 
     if group_by in FIELD_MAPPER:

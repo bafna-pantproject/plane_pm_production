@@ -219,6 +219,9 @@ export const ISSUE_DISPLAY_FILTERS_BY_PAGE: TIssueFiltersToDisplayByPageType = {
       "label_id",
       "start_date",
       "target_date",
+      "vendor_id",
+      "category",
+      "requested_delivery_date",
     ],
     layoutOptions: {
       list: {

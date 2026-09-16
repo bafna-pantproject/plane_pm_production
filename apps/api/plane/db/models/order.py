@@ -100,7 +100,6 @@ class OrderDetail(ProjectBaseModel):
         related_name="order_details",
     )
     requested_delivery_date = models.DateField(null=True, blank=True)
-    vendor_promised_date = models.DateField(null=True, blank=True)
 
     class Meta:
         verbose_name = "Order Detail"

@@ -15,7 +15,7 @@ import { ParentPropertyIcon } from "@plane/propel/icons";
 import type { ISearchIssueResponse, TIssue } from "@plane/types";
 // ui
 import { CustomMenu } from "@plane/ui";
-import { getDate, renderFormattedPayloadDate, getTabIndex } from "@plane/utils";
+import { renderFormattedPayloadDate, getTabIndex } from "@plane/utils";
 // components
 import { CycleDropdown } from "@/components/dropdowns/cycle";
 import { DateDropdown } from "@/components/dropdowns/date";
@@ -25,14 +25,12 @@ import { ModuleDropdown } from "@/components/dropdowns/module/dropdown";
 import { PriorityDropdown } from "@/components/dropdowns/priority";
 import { StateDropdown } from "@/components/dropdowns/state/dropdown";
 import { ParentIssuesListModal } from "@/components/issues/parent-issues-list-modal";
-import { CatalogSelect } from "@/components/issues/issue-detail/catalog-select";
 import { IssueLabelSelect } from "@/components/issues/select";
 import { IssueIdentifier } from "@/components/issues/issue-detail/issue-identifier";
 // hooks
 import { useProjectEstimates } from "@/hooks/store/estimates";
 import { useProject } from "@/hooks/store/use-project";
 import { useUserPermissions } from "@/hooks/store/user";
-import { useVendor } from "@/hooks/store/use-vendor";
 import { usePlatformOS } from "@/hooks/use-platform-os";
 
 type TIssueDefaultPropertiesProps = {
@@ -41,14 +39,12 @@ type TIssueDefaultPropertiesProps = {
   projectId: string | null;
   workspaceSlug: string;
   selectedParentIssue: ISearchIssueResponse | null;
-  startDate: string | null;
-  targetDate: string | null;
   parentId: string | null;
   isDraft: boolean;
   handleFormChange: () => void;
   setSelectedParentIssue: (issue: ISearchIssueResponse) => void;
-  selectedVendorId?: string | null;
-  onVendorChange?: (vendorId: string | null) => void;
+  selectedRequestedDeliveryDate?: string | null;
+  onRequestedDeliveryDateChange?: (date: string | null) => void;
 };
 
 export const IssueDefaultProperties = observer(function IssueDefaultProperties(props: TIssueDefaultPropertiesProps) {
@@ -58,14 +54,12 @@ export const IssueDefaultProperties = observer(function IssueDefaultProperties(p
     projectId,
     workspaceSlug,
     selectedParentIssue,
-    startDate,
-    targetDate,
     parentId,
     isDraft,
     handleFormChange,
     setSelectedParentIssue,
-    selectedVendorId = null,
-    onVendorChange,
+    selectedRequestedDeliveryDate = null,
+    onRequestedDeliveryDateChange,
   } = props;
   // states
   const [parentIssueListModalOpen, setParentIssueListModalOpen] = useState(false);
@@ -75,7 +69,6 @@ export const IssueDefaultProperties = observer(function IssueDefaultProperties(p
   const { getProjectById } = useProject();
   const { isMobile } = usePlatformOS();
   const { allowPermissions } = useUserPermissions();
-  const { workspaceVendors, createVendor } = useVendor();
   // derived values
   const projectDetails = getProjectById(projectId);
 
@@ -83,12 +76,6 @@ export const IssueDefaultProperties = observer(function IssueDefaultProperties(p
 
   const canCreateLabel =
     projectId && allowPermissions([EUserPermissions.ADMIN], EUserPermissionsLevel.PROJECT, workspaceSlug, projectId);
-
-  const minDate = getDate(startDate);
-  minDate?.setDate(minDate.getDate());
-
-  const maxDate = getDate(targetDate);
-  maxDate?.setDate(maxDate.getDate());
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -169,25 +156,6 @@ export const IssueDefaultProperties = observer(function IssueDefaultProperties(p
       />
       <Controller
         control={control}
-        name="start_date"
-        render={({ field: { value, onChange } }) => (
-          <div className="h-7">
-            <DateDropdown
-              value={value}
-              onChange={(date) => {
-                onChange(date ? renderFormattedPayloadDate(date) : null);
-                handleFormChange();
-              }}
-              buttonVariant="border-with-text"
-              maxDate={maxDate ?? undefined}
-              placeholder={t("start_date")}
-              tabIndex={getIndex("start_date")}
-            />
-          </div>
-        )}
-      />
-      <Controller
-        control={control}
         name="target_date"
         render={({ field: { value, onChange } }) => (
           <div className="h-7">
@@ -198,13 +166,26 @@ export const IssueDefaultProperties = observer(function IssueDefaultProperties(p
                 handleFormChange();
               }}
               buttonVariant="border-with-text"
-              minDate={minDate ?? undefined}
               placeholder={t("due_date")}
               tabIndex={getIndex("target_date")}
             />
           </div>
         )}
       />
+      {onRequestedDeliveryDateChange && (
+        <div className="h-7">
+          <DateDropdown
+            value={selectedRequestedDeliveryDate}
+            onChange={(date) => {
+              onRequestedDeliveryDateChange(date ? renderFormattedPayloadDate(date) : null);
+              handleFormChange();
+            }}
+            buttonVariant="border-with-text"
+            placeholder={t("common.requested_delivery_date")}
+            tabIndex={getIndex("requested_delivery_date")}
+          />
+        </div>
+      )}
       {projectDetails?.cycle_view && (
         <Controller
           control={control}
@@ -248,20 +229,6 @@ export const IssueDefaultProperties = observer(function IssueDefaultProperties(p
             </div>
           )}
         />
-      )}
-      {onVendorChange && (
-        <div className="h-7">
-          <CatalogSelect
-            value={selectedVendorId}
-            onChange={(vendorId) => {
-              onVendorChange(vendorId);
-              handleFormChange();
-            }}
-            options={(workspaceVendors ?? []).map((vendor) => ({ id: vendor.id, label: vendor.name }))}
-            placeholder={t("common.vendor")}
-            onCreate={(name) => createVendor(workspaceSlug, { name })}
-          />
-        </div>
       )}
       {projectId && areEstimateEnabledByProjectId(projectId) && (
         <Controller

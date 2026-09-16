@@ -156,7 +156,7 @@ class IssueListEndpoint(BaseAPIView):
             .annotate(style_id=order_detail_subquery("style_id"))
             .annotate(purchase_order_id=order_detail_subquery("purchase_order_id"))
             .annotate(requested_delivery_date=order_detail_subquery("requested_delivery_date"))
-            .annotate(vendor_promised_date=order_detail_subquery("vendor_promised_date"))
+            .annotate(category=order_detail_subquery("category"))
             .distinct()
         )
 
@@ -213,7 +213,7 @@ class IssueListEndpoint(BaseAPIView):
                 "style_id",
                 "purchase_order_id",
                 "requested_delivery_date",
-                "vendor_promised_date",
+                "category",
             )
             datetime_fields = ["created_at", "updated_at"]
             issues = user_timezone_converter(issues, datetime_fields, request.user.user_timezone)
@@ -276,7 +276,7 @@ class IssueViewSet(BaseViewSet):
             .annotate(style_id=order_detail_subquery("style_id"))
             .annotate(purchase_order_id=order_detail_subquery("purchase_order_id"))
             .annotate(requested_delivery_date=order_detail_subquery("requested_delivery_date"))
-            .annotate(vendor_promised_date=order_detail_subquery("vendor_promised_date"))
+            .annotate(category=order_detail_subquery("category"))
         )
 
         return issues

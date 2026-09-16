@@ -69,7 +69,7 @@ export type TBaseIssue = {
   style_id?: string | null;
   purchase_order_id?: string | null;
   requested_delivery_date?: string | null;
-  vendor_promised_date?: string | null;
+  category?: string | null;
 
   created_at: string;
   updated_at: string;

@@ -216,3 +216,19 @@ class ProjectOrderDetailsEndpoint(BaseAPIView):
             workspace__slug=slug, project_id=project_id
         ).select_related("vendor", "style", "purchase_order")
         return Response(OrderDetailSerializer(order_details, many=True).data, status=status.HTTP_200_OK)
+
+
+class ProjectOrderDetailCategoriesEndpoint(BaseAPIView):
+    """Distinct, non-empty OrderDetail.category values used in a project, for the
+    work-items board's category filter (category has no fixed catalog of its own)."""
+
+    @allow_permission([ROLE.ADMIN, ROLE.MEMBER, ROLE.GUEST])
+    def get(self, request, slug, project_id):
+        categories = (
+            OrderDetail.objects.filter(workspace__slug=slug, project_id=project_id)
+            .exclude(category="")
+            .order_by("category")
+            .values_list("category", flat=True)
+            .distinct()
+        )
+        return Response(list(categories), status=status.HTTP_200_OK)

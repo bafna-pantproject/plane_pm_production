@@ -41,4 +41,12 @@ export class OrderDetailService extends APIService {
         throw error?.response?.data;
       });
   }
+
+  async getProjectOrderDetailCategories(workspaceSlug: string, projectId: string): Promise<string[]> {
+    return this.get(`/api/workspaces/${workspaceSlug}/projects/${projectId}/order-detail-categories/`)
+      .then((response) => response?.data)
+      .catch((error) => {
+        throw error?.response?.data;
+      });
+  }
 }

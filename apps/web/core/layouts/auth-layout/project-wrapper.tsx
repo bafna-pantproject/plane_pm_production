@@ -71,7 +71,7 @@ export const ProjectAuthWrapper = observer(function ProjectAuthWrapper(props: IP
   const { fetchWorkspaceVendors } = useVendor();
   const { fetchWorkspaceStyles } = useStyle();
   const { fetchWorkspacePurchaseOrders } = usePurchaseOrder();
-  const { fetchProjectOrderDetails } = useOrderDetail();
+  const { fetchProjectOrderDetails, fetchProjectOrderDetailCategories } = useOrderDetail();
   // derived values
   const hasPermissionToCurrentProject = allowPermissions(
     [EUserPermissions.ADMIN, EUserPermissions.MEMBER, EUserPermissions.GUEST],
@@ -161,6 +161,12 @@ export const ProjectAuthWrapper = observer(function ProjectAuthWrapper(props: IP
     revalidateIfStale: false,
     revalidateOnFocus: false,
   });
+  // fetching distinct order-detail categories, for the category filter
+  useSWR(
+    `PROJECT_ORDER_DETAIL_CATEGORIES_${projectId}`,
+    () => fetchProjectOrderDetailCategories(workspaceSlug, projectId),
+    { revalidateIfStale: false, revalidateOnFocus: false }
+  );
 
   // handle join project
   const handleJoinProject = () => {

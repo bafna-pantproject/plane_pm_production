@@ -8,6 +8,7 @@ from plane.app.views import (
     IssueOrderDetailEndpoint,
     IssueStateTargetDetailEndpoint,
     IssueStateTargetsEndpoint,
+    ProjectOrderDetailCategoriesEndpoint,
     ProjectOrderDetailsEndpoint,
     PurchaseOrderViewSet,
     StyleViewSet,
@@ -59,6 +60,11 @@ urlpatterns = [
         "workspaces/<str:slug>/projects/<uuid:project_id>/order-details/",
         ProjectOrderDetailsEndpoint.as_view(),
         name="project-order-details",
+    ),
+    path(
+        "workspaces/<str:slug>/projects/<uuid:project_id>/order-detail-categories/",
+        ProjectOrderDetailCategoriesEndpoint.as_view(),
+        name="project-order-detail-categories",
     ),
     path(
         "workspaces/<str:slug>/projects/<uuid:project_id>/issues/<uuid:issue_id>/order-detail/",

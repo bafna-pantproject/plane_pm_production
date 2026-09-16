@@ -8,7 +8,7 @@ import { useCallback, useMemo } from "react";
 import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
 // icons
-import { DueDatePropertyIcon, StartDatePropertyIcon } from "@plane/propel/icons";
+import { DueDatePropertyIcon } from "@plane/propel/icons";
 // types
 import type { TIssuePriorities, TWorkspaceDraftIssue } from "@plane/types";
 import { getDate, renderFormattedPayloadDate, shouldHighlightIssueDueDate } from "@plane/utils";
@@ -103,13 +103,6 @@ export const DraftIssueProperties = observer(function DraftIssueProperties(props
     [issue, issueOperations]
   );
 
-  const handleStartDate = (date: Date | null) =>
-    issue?.project_id &&
-    updateIssue &&
-    updateIssue(issue.project_id, issue.id, {
-      start_date: date ? (renderFormattedPayloadDate(date) ?? undefined) : undefined,
-    });
-
   const handleTargetDate = (date: Date | null) =>
     issue?.project_id &&
     updateIssue &&
@@ -130,9 +123,6 @@ export const DraftIssueProperties = observer(function DraftIssueProperties(props
 
   const minDate = getDate(issue.start_date);
   minDate?.setDate(minDate.getDate());
-
-  const maxDate = getDate(issue.target_date);
-  maxDate?.setDate(maxDate.getDate());
 
   const handleEventPropagation = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -177,21 +167,6 @@ export const DraftIssueProperties = observer(function DraftIssueProperties(props
         renderByDefault={isMobile}
         hideDropdownArrow
       />
-
-      {/* start date */}
-      <div className="h-5" onClick={handleEventPropagation}>
-        <DateDropdown
-          value={issue.start_date ?? null}
-          onChange={handleStartDate}
-          maxDate={maxDate}
-          placeholder="Start date"
-          icon={<StartDatePropertyIcon className="h-3 w-3 flex-shrink-0" />}
-          buttonVariant={issue.start_date ? "border-with-text" : "border-without-text"}
-          optionsClassName="z-10"
-          renderByDefault={isMobile}
-          showTooltip
-        />
-      </div>
 
       {/* target/due date */}
       <div className="h-5" onClick={handleEventPropagation}>

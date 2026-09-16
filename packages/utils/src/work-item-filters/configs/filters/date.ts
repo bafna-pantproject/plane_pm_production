@@ -67,6 +67,24 @@ export const getCreatedAtFilterConfig =
     });
 
 /**
+ * Get the requested delivery date filter config
+ * @template K - The filter key
+ * @param key - The filter key to use
+ * @returns A function that takes parameters and returns the requested delivery date filter config
+ */
+export const getRequestedDeliveryDateFilterConfig =
+  <P extends TFilterProperty>(key: P): TCreateFilterConfig<P, TCreateDateFilterParams> =>
+  (params: TCreateDateFilterParams) =>
+    createFilterConfig<P>({
+      id: key,
+      label: "Requested delivery date",
+      ...params,
+      icon: params.filterIcon,
+      allowMultipleFilters: true,
+      supportedOperatorConfigsMap: getSupportedDateOperators(params),
+    });
+
+/**
  * Get the updated at filter config
  * @template K - The filter key
  * @param key - The filter key to use

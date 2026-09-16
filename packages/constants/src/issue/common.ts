@@ -163,6 +163,9 @@ export const ISSUE_DISPLAY_PROPERTIES_KEYS: (keyof IIssueDisplayProperties)[] = 
   "modules",
   "cycle",
   "issue_type",
+  "vendor",
+  "category",
+  "requested_delivery_date",
 ];
 
 export const SUB_ISSUES_DISPLAY_PROPERTIES_KEYS: (keyof IIssueDisplayProperties)[] = [
@@ -215,6 +218,9 @@ export const ISSUE_DISPLAY_PROPERTIES: {
   },
   { key: "modules", titleTranslationKey: "common.module" },
   { key: "cycle", titleTranslationKey: "common.cycle" },
+  { key: "vendor", titleTranslationKey: "common.vendor" },
+  { key: "category", titleTranslationKey: "common.category" },
+  { key: "requested_delivery_date", titleTranslationKey: "common.requested_delivery_date" },
 ];
 
 export const SPREADSHEET_PROPERTY_LIST: (keyof IIssueDisplayProperties)[] = [

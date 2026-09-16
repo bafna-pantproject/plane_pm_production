@@ -188,6 +188,22 @@ class IssueFilterSet(BaseFilterSet):
     updated_at__exact = filters.DateFilter(field_name="updated_at", lookup_expr="date")
     updated_at__range = DateCSVRangeFilter(field_name="updated_at", lookup_expr="date__range")
 
+    # Garment order tracking fields - OrderDetail is a OneToOne on Issue (related_name
+    # "order_detail"), so these traverse the relation directly like project_id/created_by_id.
+    vendor_id = filters.UUIDFilter(field_name="order_detail__vendor_id")
+    vendor_id__in = UUIDInFilter(field_name="order_detail__vendor_id", lookup_expr="in")
+
+    category = filters.CharFilter(field_name="order_detail__category")
+    category__in = CharInFilter(field_name="order_detail__category", lookup_expr="in")
+
+    # requested_delivery_date is already a plain DateField (unlike created_at/updated_at,
+    # which are DateTimeFields), so no "date" lookup_expr extraction trick is needed here.
+    requested_delivery_date = filters.DateFilter(field_name="order_detail__requested_delivery_date")
+    requested_delivery_date__exact = filters.DateFilter(field_name="order_detail__requested_delivery_date")
+    requested_delivery_date__range = DateCSVRangeFilter(
+        field_name="order_detail__requested_delivery_date", lookup_expr="range"
+    )
+
     class Meta:
         model = Issue
         fields = {

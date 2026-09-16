@@ -115,6 +115,9 @@ export const WORK_ITEM_FILTER_PROPERTY_KEYS = [
   "project_id",
   "created_at",
   "updated_at",
+  "vendor_id",
+  "category",
+  "requested_delivery_date",
 ] as const;
 export type TWorkItemFilterProperty = (typeof WORK_ITEM_FILTER_PROPERTY_KEYS)[number];
 
@@ -181,6 +184,9 @@ export interface IIssueDisplayProperties {
   modules?: boolean;
   cycle?: boolean;
   issue_type?: boolean;
+  vendor?: boolean;
+  category?: boolean;
+  requested_delivery_date?: boolean;
 }
 
 export type TIssueKanbanFilters = {

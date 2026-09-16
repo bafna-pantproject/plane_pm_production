@@ -92,6 +92,7 @@ from .order import (
     IssueStateTargetDetailEndpoint,
     IssueOrderDetailEndpoint,
     ProjectOrderDetailsEndpoint,
+    ProjectOrderDetailCategoriesEndpoint,
 )
 from .view.base import (
     WorkspaceViewViewSet,

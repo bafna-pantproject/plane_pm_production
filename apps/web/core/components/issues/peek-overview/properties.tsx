@@ -14,7 +14,6 @@ import {
   ModuleIcon,
   MembersPropertyIcon,
   PriorityPropertyIcon,
-  StartDatePropertyIcon,
   DueDatePropertyIcon,
   LabelPropertyIcon,
   UserCirclePropertyIcon,
@@ -41,6 +40,7 @@ import type { TIssueOperations } from "../issue-detail";
 import { IssueCycleSelect } from "../issue-detail/cycle-select";
 import { IssueLabel } from "../issue-detail/label";
 import { IssueModuleSelect } from "../issue-detail/module-select";
+import { IssueTNAPlan } from "../issue-detail/tna-plan";
 
 interface IPeekOverviewProperties {
   workspaceSlug: string;
@@ -70,9 +70,6 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
 
   const minDate = getDate(issue.start_date);
   minDate?.setDate(minDate.getDate());
-
-  const maxDate = getDate(issue.target_date);
-  maxDate?.setDate(maxDate.getDate());
 
   return (
     <div>
@@ -138,26 +135,6 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
             </span>
           </SidebarPropertyListItem>
         )}
-
-        <SidebarPropertyListItem icon={StartDatePropertyIcon} label={t("common.order_by.start_date")}>
-          <DateDropdown
-            value={issue.start_date}
-            onChange={(val) =>
-              issueOperations.update(workspaceSlug, projectId, issueId, {
-                start_date: val ? renderFormattedPayloadDate(val) : null,
-              })
-            }
-            placeholder={t("issue.add.start_date")}
-            buttonVariant="transparent-with-text"
-            maxDate={maxDate ?? undefined}
-            disabled={disabled}
-            className="group w-full grow"
-            buttonContainerClassName="w-full text-left h-7.5"
-            buttonClassName={`text-body-xs-medium ${issue?.start_date ? "" : "text-placeholder"}`}
-            hideIcon
-            clearIconClassName="h-3 w-3 hidden group-hover:inline"
-          />
-        </SidebarPropertyListItem>
 
         <SidebarPropertyListItem icon={DueDatePropertyIcon} label={t("common.order_by.due_date")}>
           <div className="flex w-full items-center gap-2">
@@ -243,6 +220,16 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
         <SidebarPropertyListItem icon={LabelPropertyIcon} label={t("common.labels")}>
           <IssueLabel workspaceSlug={workspaceSlug} projectId={projectId} issueId={issueId} disabled={disabled} />
         </SidebarPropertyListItem>
+      </div>
+
+      <div className="mt-5">
+        <IssueTNAPlan
+          workspaceSlug={workspaceSlug}
+          projectId={projectId}
+          issueId={issueId}
+          disabled={disabled}
+          textClassName="text-body-xs-medium"
+        />
       </div>
     </div>
   );

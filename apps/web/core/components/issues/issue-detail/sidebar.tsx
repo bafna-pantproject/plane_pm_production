@@ -4,9 +4,9 @@
  * See the LICENSE file for details.
  */
 
-import { Building2, CalendarCheck2, CalendarClock, Receipt, Tag } from "lucide-react";
+import { Building2, CalendarClock, Hash, Receipt, Tag } from "lucide-react";
 import { observer } from "mobx-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 // i18n
 import { useTranslation } from "@plane/i18n";
 // ui
@@ -16,13 +16,13 @@ import {
   ModuleIcon,
   MembersPropertyIcon,
   PriorityPropertyIcon,
-  StartDatePropertyIcon,
   DueDatePropertyIcon,
   LabelPropertyIcon,
   UserCirclePropertyIcon,
   EstimatePropertyIcon,
   ParentPropertyIcon,
 } from "@plane/propel/icons";
+import { Input } from "@plane/ui";
 import {
   cn,
   composeOrderDetailName,
@@ -46,9 +46,9 @@ import { useOrderDetail } from "@/hooks/store/use-order-detail";
 import { useProject } from "@/hooks/store/use-project";
 import { useProjectState } from "@/hooks/store/use-project-state";
 import { usePurchaseOrder } from "@/hooks/store/use-purchase-order";
-import { useTaskStateTarget } from "@/hooks/store/use-task-state-target";
 import { useStyle } from "@/hooks/store/use-style";
 import { useVendor } from "@/hooks/store/use-vendor";
+import useDebounce from "@/hooks/use-debounce";
 // components
 import { IssueParentSelectRoot } from "@/components/issues/parent-select-root";
 import { SidebarPropertyListItem } from "@/components/common/layout/sidebar/property-list-item";
@@ -57,6 +57,7 @@ import { IssueCycleSelect } from "./cycle-select";
 import { IssueLabel } from "./label";
 import { IssueModuleSelect } from "./module-select";
 import type { TIssueOperations } from "./root";
+import { IssueTNAPlan } from "./tna-plan";
 
 type Props = {
   workspaceSlug: string;
@@ -76,23 +77,58 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
     issue: { getIssueById },
   } = useIssueDetail();
   const { getUserDetails } = useMember();
-  const { getStateById, getProjectStates } = useProjectState();
+  const { getStateById } = useProjectState();
   const { workspaceVendors, createVendor, getVendorById } = useVendor();
   const { workspaceStyles, createStyle } = useStyle();
   const { workspacePurchaseOrders, createPurchaseOrder } = usePurchaseOrder();
   const { getOrderDetailByIssueId, fetchIssueOrderDetail, updateIssueOrderDetail } = useOrderDetail();
-  const { getIssueStateTargets, fetchIssueStateTargets, setIssueStateTarget } = useTaskStateTarget();
   const orderDetail = getOrderDetailByIssueId(issueId);
-  const stateTargets = getIssueStateTargets(issueId);
-  const projectStates = getProjectStates(projectId);
 
   // the project-wide bulk fetch (project-wrapper.tsx) may not have completed yet when the
   // sidebar first mounts, so backstop it with a fetch scoped to just this issue.
   useEffect(() => {
     if (!orderDetail) fetchIssueOrderDetail(workspaceSlug, projectId, issueId);
-    if (!stateTargets) fetchIssueStateTargets(workspaceSlug, projectId, issueId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workspaceSlug, projectId, issueId]);
+
+  const updateOrderDetail = (data: Parameters<typeof updateIssueOrderDetail>[3]) =>
+    updateIssueOrderDetail(workspaceSlug, projectId, issueId, data);
+
+  // work items that use category/vendor/quantity display that composite as their name
+  // wherever the app just shows the plain title (kanban/list/calendar boards); keep it in
+  // sync when vendor or quantity change here too, not just from the create/edit modal.
+  const syncDerivedName = (overrides: { vendorId?: string | null; quantity?: number | null }) => {
+    if (!orderDetail?.category) return;
+    const vendorId = "vendorId" in overrides ? overrides.vendorId : orderDetail.vendor;
+    const quantity = "quantity" in overrides ? overrides.quantity : orderDetail.quantity;
+    const vendorName = vendorId ? getVendorById(vendorId)?.name : undefined;
+    const derivedName = composeOrderDetailName(orderDetail.category, vendorName, quantity);
+    if (derivedName) issueOperations.update(workspaceSlug, projectId, issueId, { name: derivedName });
+  };
+
+  const handleVendorChange = (vendorId: string | null) => {
+    updateOrderDetail({ vendor: vendorId });
+    syncDerivedName({ vendorId });
+  };
+
+  // local editable copy of quantity, since it's free-typed rather than picked from a
+  // dropdown; debounced and synced back from the store like the issue title input.
+  const [quantityInput, setQuantityInput] = useState(orderDetail?.quantity != null ? String(orderDetail.quantity) : "");
+  const debouncedQuantityInput = useDebounce(quantityInput, 800);
+
+  useEffect(() => {
+    setQuantityInput(orderDetail?.quantity != null ? String(orderDetail.quantity) : "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderDetail?.quantity]);
+
+  useEffect(() => {
+    const parsedQuantity = Number.parseInt(debouncedQuantityInput, 10);
+    const isValid = debouncedQuantityInput.trim() !== "" && Number.isInteger(parsedQuantity) && parsedQuantity > 0;
+    if (!isValid || parsedQuantity === orderDetail?.quantity) return;
+    updateOrderDetail({ quantity: parsedQuantity });
+    syncDerivedName({ quantity: parsedQuantity });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedQuantityInput]);
 
   const issue = getIssueById(issueId);
   if (!issue) return <></>;
@@ -102,25 +138,9 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
   // derived values
   const projectDetails = getProjectById(issue.project_id);
   const stateDetails = getStateById(issue.state_id);
-  const updateOrderDetail = (data: Parameters<typeof updateIssueOrderDetail>[3]) =>
-    updateIssueOrderDetail(workspaceSlug, projectId, issueId, data);
-
-  // work items that use category/vendor/quantity display that composite as their name
-  // wherever the app just shows the plain title (kanban/list/calendar boards); keep it in
-  // sync when vendor changes here too, not just from the create/edit modal.
-  const handleVendorChange = (vendorId: string | null) => {
-    updateOrderDetail({ vendor: vendorId });
-    if (!orderDetail?.category) return;
-    const vendorName = vendorId ? getVendorById(vendorId)?.name : undefined;
-    const derivedName = composeOrderDetailName(orderDetail.category, vendorName, orderDetail.quantity);
-    if (derivedName) issueOperations.update(workspaceSlug, projectId, issueId, { name: derivedName });
-  };
 
   const minDate = issue.start_date ? getDate(issue.start_date) : null;
   minDate?.setDate(minDate.getDate());
-
-  const maxDate = issue.target_date ? getDate(issue.target_date) : null;
-  maxDate?.setDate(maxDate.getDate());
 
   return (
     <>
@@ -181,26 +201,6 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
                 </div>
               </SidebarPropertyListItem>
             )}
-
-            <SidebarPropertyListItem icon={StartDatePropertyIcon} label={t("common.order_by.start_date")}>
-              <DateDropdown
-                placeholder={t("issue.add.start_date")}
-                value={issue.start_date}
-                onChange={(val) =>
-                  issueOperations.update(workspaceSlug, projectId, issueId, {
-                    start_date: val ? renderFormattedPayloadDate(val) : null,
-                  })
-                }
-                maxDate={maxDate ?? undefined}
-                disabled={!isEditable}
-                buttonVariant="transparent-with-text"
-                className="group w-full grow"
-                buttonContainerClassName="w-full text-left h-7.5"
-                buttonClassName={`text-body-xs-regular ${issue?.start_date ? "" : "text-placeholder"}`}
-                hideIcon
-                clearIconClassName="h-3 w-3 hidden group-hover:inline"
-              />
-            </SidebarPropertyListItem>
 
             <SidebarPropertyListItem icon={DueDatePropertyIcon} label={t("common.order_by.due_date")}>
               <div className="flex w-full items-center gap-2">
@@ -306,6 +306,19 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
               />
             </SidebarPropertyListItem>
 
+            <SidebarPropertyListItem icon={Hash} label={t("common.quantity")}>
+              <Input
+                type="number"
+                min={1}
+                step={1}
+                value={quantityInput}
+                onChange={(e) => setQuantityInput(e.target.value)}
+                disabled={!isEditable}
+                placeholder={t("common.quantity")}
+                className="h-7.5 w-full grow border-none bg-transparent text-body-xs-regular"
+              />
+            </SidebarPropertyListItem>
+
             <SidebarPropertyListItem icon={Tag} label={t("common.style")}>
               <CatalogSelect
                 className="w-full grow"
@@ -351,59 +364,10 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
                 clearIconClassName="h-3 w-3 hidden group-hover:inline"
               />
             </SidebarPropertyListItem>
-
-            <SidebarPropertyListItem icon={CalendarClock} label={t("common.vendor_promised_date")}>
-              <DateDropdown
-                placeholder={t("common.vendor_promised_date")}
-                value={orderDetail?.vendor_promised_date ?? null}
-                onChange={(val) =>
-                  updateOrderDetail({ vendor_promised_date: val ? renderFormattedPayloadDate(val) : null })
-                }
-                disabled={!isEditable}
-                buttonVariant="transparent-with-text"
-                className="group w-full grow"
-                buttonContainerClassName="w-full text-left h-7.5"
-                buttonClassName={`text-body-xs-regular ${orderDetail?.vendor_promised_date ? "" : "text-placeholder"}`}
-                hideIcon
-                clearIconClassName="h-3 w-3 hidden group-hover:inline"
-              />
-            </SidebarPropertyListItem>
           </div>
 
-          <h5 className="mt-5 text-body-xs-medium">{t("common.state_targets")}</h5>
-          <div className={`mt-4 mb-2 space-y-2.5 truncate ${!isEditable ? "opacity-60" : ""}`}>
-            {(projectStates ?? []).map((state) => {
-              const stateTarget = stateTargets?.find((target) => target.state === state.id);
-              return (
-                <SidebarPropertyListItem key={state.id} icon={CalendarCheck2} label={state.name}>
-                  <DateDropdown
-                    placeholder={t("common.target_date")}
-                    value={stateTarget?.target_date ?? null}
-                    onChange={(val) =>
-                      setIssueStateTarget(
-                        workspaceSlug,
-                        projectId,
-                        issueId,
-                        state.id,
-                        val ? renderFormattedPayloadDate(val) : null
-                      )
-                    }
-                    disabled={!isEditable}
-                    buttonVariant="transparent-with-text"
-                    className="group w-full grow"
-                    buttonContainerClassName="w-full text-left h-7.5"
-                    buttonClassName={`text-body-xs-regular ${stateTarget?.target_date ? "" : "text-placeholder"}`}
-                    hideIcon
-                    clearIconClassName="h-3 w-3 hidden group-hover:inline"
-                  />
-                  <span className="shrink-0 px-2 text-body-xs-regular text-tertiary">
-                    {stateTarget?.entered_at
-                      ? `${t("common.entered_at")}: ${renderFormattedDate(stateTarget.entered_at)}`
-                      : ""}
-                  </span>
-                </SidebarPropertyListItem>
-              );
-            })}
+          <div className="mt-5">
+            <IssueTNAPlan workspaceSlug={workspaceSlug} projectId={projectId} issueId={issueId} disabled={!isEditable} />
           </div>
         </div>
       </div>

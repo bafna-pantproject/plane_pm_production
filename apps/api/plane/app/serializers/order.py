@@ -52,7 +52,6 @@ class OrderDetailSerializer(BaseSerializer):
             "style",
             "purchase_order",
             "requested_delivery_date",
-            "vendor_promised_date",
         ]
         read_only_fields = ["workspace", "project", "issue"]
 

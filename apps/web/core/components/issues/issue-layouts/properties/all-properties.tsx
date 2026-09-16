@@ -10,7 +10,7 @@ import { xor } from "lodash-es";
 import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
 // icons
-import { Paperclip } from "lucide-react";
+import { Boxes, CalendarClock, Paperclip } from "lucide-react";
 // i18n
 import { useTranslation } from "@plane/i18n";
 import { LinkIcon, StartDatePropertyIcon, ViewsIcon, DueDatePropertyIcon } from "@plane/propel/icons";
@@ -33,12 +33,15 @@ import { MemberDropdown } from "@/components/dropdowns/member/dropdown";
 import { ModuleDropdown } from "@/components/dropdowns/module/dropdown";
 import { PriorityDropdown } from "@/components/dropdowns/priority";
 import { StateDropdown } from "@/components/dropdowns/state/dropdown";
+import { CatalogSelect } from "@/components/issues/issue-detail/catalog-select";
 // hooks
 import { useProjectEstimates } from "@/hooks/store/estimates";
 import { useIssues } from "@/hooks/store/use-issues";
 import { useLabel } from "@/hooks/store/use-label";
+import { useOrderDetail } from "@/hooks/store/use-order-detail";
 import { useProject } from "@/hooks/store/use-project";
 import { useProjectState } from "@/hooks/store/use-project-state";
+import { useVendor } from "@/hooks/store/use-vendor";
 import { useAppRouter } from "@/hooks/use-app-router";
 import { useIssueStoreType } from "@/hooks/use-issue-layout-store";
 import { usePlatformOS } from "@/hooks/use-platform-os";
@@ -73,6 +76,8 @@ export const IssueProperties = observer(function IssueProperties(props: IIssuePr
   const { areEstimateEnabledByProjectId } = useProjectEstimates();
   const { getStateById } = useProjectState();
   const { isMobile } = usePlatformOS();
+  const { workspaceVendors } = useVendor();
+  const { updateIssueOrderDetail } = useOrderDetail();
   const projectDetails = getProjectById(issue.project_id);
 
   // router
@@ -158,6 +163,18 @@ export const IssueProperties = observer(function IssueProperties(props: IIssuePr
 
   const handleEstimate = async (value: string | undefined) => {
     if (updateIssue) await updateIssue(issue.project_id, issue.id, { estimate_point: value });
+  };
+
+  const handleVendor = async (vendorId: string | null) => {
+    if (!workspaceSlug || !issue.project_id) return;
+    await updateIssueOrderDetail(workspaceSlug.toString(), issue.project_id, issue.id, { vendor: vendorId });
+  };
+
+  const handleRequestedDeliveryDate = async (date: Date | null) => {
+    if (!workspaceSlug || !issue.project_id) return;
+    await updateIssueOrderDetail(workspaceSlug.toString(), issue.project_id, issue.id, {
+      requested_delivery_date: date ? renderFormattedPayloadDate(date) : null,
+    });
   };
 
   const workItemLink = generateWorkItemLink({
@@ -498,6 +515,58 @@ export const IssueProperties = observer(function IssueProperties(props: IIssuePr
           hideDropdownArrow
           maxRender={3}
         />
+      </WithDisplayPropertiesHOC>
+
+      {/* vendor */}
+      <WithDisplayPropertiesHOC displayProperties={displayProperties} displayPropertyKey="vendor">
+        {/* oxlint-disable-next-line jsx_a11y/click-events-have-key-events oxlint-disable-next-line jsx_a11y/no-static-element-interactions */}
+        <div className="h-5 max-w-32" onFocus={handleEventPropagation} onClick={handleEventPropagation}>
+          <CatalogSelect
+            value={issue.vendor_id}
+            onChange={handleVendor}
+            options={(workspaceVendors ?? []).map((vendor) => ({ id: vendor.id, label: vendor.name }))}
+            placeholder={t("common.vendor")}
+            disabled={isReadOnly}
+          />
+        </div>
+      </WithDisplayPropertiesHOC>
+
+      {/* category - free text, read-only here; edited from the create/edit modal */}
+      <WithDisplayPropertiesHOC
+        displayProperties={displayProperties}
+        displayPropertyKey="category"
+        shouldRenderProperty={() => !!issue.category}
+      >
+        <Tooltip
+          tooltipHeading={t("common.category")}
+          tooltipContent={issue.category ?? ""}
+          isMobile={isMobile}
+          renderByDefault={false}
+        >
+          <div className="flex h-5 flex-shrink-0 items-center justify-center gap-2 overflow-hidden rounded-sm border-[0.5px] border-strong px-2.5 py-1">
+            <Boxes className="h-3 w-3 flex-shrink-0" strokeWidth={2} />
+            <div className="max-w-24 truncate text-caption-sm-regular">{issue.category}</div>
+          </div>
+        </Tooltip>
+      </WithDisplayPropertiesHOC>
+
+      {/* requested delivery date */}
+      <WithDisplayPropertiesHOC displayProperties={displayProperties} displayPropertyKey="requested_delivery_date">
+        {/* oxlint-disable-next-line jsx_a11y/click-events-have-key-events oxlint-disable-next-line jsx_a11y/no-static-element-interactions */}
+        <div className="h-5" onFocus={handleEventPropagation} onClick={handleEventPropagation}>
+          <DateDropdown
+            value={issue.requested_delivery_date ?? null}
+            onChange={handleRequestedDeliveryDate}
+            placeholder={t("common.requested_delivery_date")}
+            icon={<CalendarClock className="h-3 w-3 flex-shrink-0" />}
+            buttonVariant={issue.requested_delivery_date ? "border-with-text" : "border-without-text"}
+            optionsClassName="z-10"
+            disabled={isReadOnly}
+            renderByDefault={isMobile}
+            showTooltip
+            labelClassName="text-caption-sm-regular"
+          />
+        </div>
       </WithDisplayPropertiesHOC>
     </div>
   );

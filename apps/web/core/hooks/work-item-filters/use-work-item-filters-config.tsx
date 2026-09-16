@@ -5,7 +5,7 @@
  */
 
 import { useCallback, useMemo } from "react";
-import { AtSign, Briefcase } from "lucide-react";
+import { AtSign, Boxes, Briefcase, Building2, CalendarClock } from "lucide-react";
 // plane imports
 import { Logo } from "@plane/propel/emoji-icon-picker";
 import {
@@ -36,6 +36,7 @@ import type {
 import { Avatar } from "@plane/ui";
 import {
   getAssigneeFilterConfig,
+  getCategoryFilterConfig,
   getCreatedAtFilterConfig,
   getCreatedByFilterConfig,
   getCycleFilterConfig,
@@ -45,12 +46,14 @@ import {
   getModuleFilterConfig,
   getPriorityFilterConfig,
   getProjectFilterConfig,
+  getRequestedDeliveryDateFilterConfig,
   getStartDateFilterConfig,
   getStateFilterConfig,
   getStateGroupFilterConfig,
   getSubscriberFilterConfig,
   getTargetDateFilterConfig,
   getUpdatedAtFilterConfig,
+  getVendorFilterConfig,
   isLoaderReady,
 } from "@plane/utils";
 // store hooks
@@ -58,8 +61,10 @@ import { useCycle } from "@/hooks/store/use-cycle";
 import { useLabel } from "@/hooks/store/use-label";
 import { useMember } from "@/hooks/store/use-member";
 import { useModule } from "@/hooks/store/use-module";
+import { useOrderDetail } from "@/hooks/store/use-order-detail";
 import { useProject } from "@/hooks/store/use-project";
 import { useProjectState } from "@/hooks/store/use-project-state";
+import { useVendor } from "@/hooks/store/use-vendor";
 // plane web imports
 import { useFiltersOperatorConfigs } from "@/hooks/rich-filters/use-filters-operator-configs";
 
@@ -98,10 +103,16 @@ export const useWorkItemFiltersConfig = (props: TUseWorkItemFiltersConfigProps):
   const { getModuleById } = useModule();
   const { getStateById } = useProjectState();
   const { getUserDetails } = useMember();
+  const { workspaceVendors } = useVendor();
+  const { getProjectOrderDetailCategories } = useOrderDetail();
   // derived values
   const operatorConfigs = useFiltersOperatorConfigs({ workspaceSlug });
   const filtersToShow = useMemo(() => new Set(allowedFilters), [allowedFilters]);
   const project = useMemo(() => getProjectById(projectId), [projectId, getProjectById]);
+  const categories = useMemo(
+    () => (projectId ? getProjectOrderDetailCategories(projectId) : undefined),
+    [projectId, getProjectOrderDetailCategories]
+  );
   const members: IUserLite[] | undefined = useMemo(
     () =>
       memberIds
@@ -349,6 +360,41 @@ export const useWorkItemFiltersConfig = (props: TUseWorkItemFiltersConfigProps):
     [operatorConfigs]
   );
 
+  // vendor filter config
+  const vendorFilterConfig = useMemo(
+    () =>
+      getVendorFilterConfig<TWorkItemFilterProperty>("vendor_id")({
+        isEnabled: isFilterEnabled("vendor_id") && workspaceVendors !== undefined,
+        filterIcon: Building2,
+        vendors: workspaceVendors ?? [],
+        ...operatorConfigs,
+      }),
+    [isFilterEnabled, workspaceVendors, operatorConfigs]
+  );
+
+  // category filter config
+  const categoryFilterConfig = useMemo(
+    () =>
+      getCategoryFilterConfig<TWorkItemFilterProperty>("category")({
+        isEnabled: isFilterEnabled("category") && categories !== undefined,
+        filterIcon: Boxes,
+        categories: categories ?? [],
+        ...operatorConfigs,
+      }),
+    [isFilterEnabled, categories, operatorConfigs]
+  );
+
+  // requested delivery date filter config
+  const requestedDeliveryDateFilterConfig = useMemo(
+    () =>
+      getRequestedDeliveryDateFilterConfig<TWorkItemFilterProperty>("requested_delivery_date")({
+        isEnabled: true,
+        filterIcon: CalendarClock,
+        ...operatorConfigs,
+      }),
+    [operatorConfigs]
+  );
+
   // project filter config
   const projectFilterConfig = useMemo(
     () =>
@@ -380,6 +426,9 @@ export const useWorkItemFiltersConfig = (props: TUseWorkItemFiltersConfigProps):
       updatedAtFilterConfig,
       createdByFilterConfig,
       subscriberFilterConfig,
+      vendorFilterConfig,
+      categoryFilterConfig,
+      requestedDeliveryDateFilterConfig,
     ],
     configMap: {
       project_id: projectFilterConfig,
@@ -397,6 +446,9 @@ export const useWorkItemFiltersConfig = (props: TUseWorkItemFiltersConfigProps):
       target_date: targetDateFilterConfig,
       created_at: createdAtFilterConfig,
       updated_at: updatedAtFilterConfig,
+      vendor_id: vendorFilterConfig,
+      category: categoryFilterConfig,
+      requested_delivery_date: requestedDeliveryDateFilterConfig,
     },
     isFilterEnabled,
     members: members ?? [],

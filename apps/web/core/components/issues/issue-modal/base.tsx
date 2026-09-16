@@ -70,6 +70,7 @@ export const CreateUpdateIssueModalBase = observer(function CreateUpdateIssueMod
   const [selectedVendorId, setSelectedVendorId] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [selectedQuantity, setSelectedQuantity] = useState<number | null>(null);
+  const [selectedRequestedDeliveryDate, setSelectedRequestedDeliveryDate] = useState<string | null>(null);
   // store hooks
   const { t } = useTranslation();
   const { workspaceSlug, projectId: routerProjectId, cycleId, moduleId, workItem } = useParams();
@@ -99,6 +100,7 @@ export const CreateUpdateIssueModalBase = observer(function CreateUpdateIssueMod
       setSelectedCategory(data?.name ?? "");
       setSelectedQuantity(null);
       setSelectedVendorId(null);
+      setSelectedRequestedDeliveryDate(null);
       return;
     }
     const response = await fetchIssue(workspaceSlug.toString(), projectId.toString(), issueId);
@@ -110,6 +112,7 @@ export const CreateUpdateIssueModalBase = observer(function CreateUpdateIssueMod
     setSelectedCategory(orderDetail?.category || response?.name || data?.name || "");
     setSelectedQuantity(orderDetail?.quantity ?? null);
     setSelectedVendorId(orderDetail?.vendor ?? null);
+    setSelectedRequestedDeliveryDate(orderDetail?.requested_delivery_date ?? null);
   };
 
   useEffect(() => {
@@ -249,12 +252,13 @@ export const CreateUpdateIssueModalBase = observer(function CreateUpdateIssueMod
         });
       }
 
-      // persist category/quantity (and vendor, if selected) on the newly created issue's order detail
+      // persist category/quantity (and vendor/requested delivery date, if selected) on the newly created issue's order detail
       if (response.id && response.project_id) {
         await updateIssueOrderDetail(workspaceSlug.toString(), response.project_id, response.id, {
           category: selectedCategory,
           quantity: selectedQuantity,
           ...(selectedVendorId ? { vendor: selectedVendorId } : {}),
+          requested_delivery_date: selectedRequestedDeliveryDate,
         });
       }
 
@@ -277,6 +281,7 @@ export const CreateUpdateIssueModalBase = observer(function CreateUpdateIssueMod
       setSelectedVendorId(null);
       setSelectedCategory("");
       setSelectedQuantity(null);
+      setSelectedRequestedDeliveryDate(null);
       return response;
     } catch (error: any) {
       setToast({
@@ -360,6 +365,7 @@ export const CreateUpdateIssueModalBase = observer(function CreateUpdateIssueMod
         category: selectedCategory,
         quantity: selectedQuantity,
         vendor: selectedVendorId,
+        requested_delivery_date: selectedRequestedDeliveryDate,
       });
 
       // Run cycle, module, and property changes sequentially to avoid
@@ -450,6 +456,8 @@ export const CreateUpdateIssueModalBase = observer(function CreateUpdateIssueMod
     quantity: selectedQuantity,
     onCategoryChange: setSelectedCategory,
     onQuantityChange: setSelectedQuantity,
+    selectedRequestedDeliveryDate: selectedRequestedDeliveryDate,
+    onRequestedDeliveryDateChange: setSelectedRequestedDeliveryDate,
   };
 
   return (
