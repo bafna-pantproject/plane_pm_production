@@ -487,6 +487,12 @@ class IssueViewSet(BaseViewSet):
                     "is_draft",
                     "archived_at",
                     "deleted_at",
+                    "vendor_id",
+                    "style_id",
+                    "purchase_order_id",
+                    "requested_delivery_date",
+                    "category",
+                    "order_number",
                 )
                 .first()
             )

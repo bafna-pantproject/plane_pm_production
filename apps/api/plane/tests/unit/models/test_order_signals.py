@@ -43,6 +43,134 @@ class TestOrderDetailLifecycle:
 
 
 @pytest.mark.unit
+class TestOrderDetailAndTNAPlanTrickleDown:
+    """A new sub-issue created directly under a parent (parent set at creation
+    time) seeds its vendor, order number, and TNA plan (per-state targets) from
+    the parent's — a one-time copy at creation, not an ongoing link."""
+
+    @pytest.mark.django_db
+    def test_new_sub_issue_inherits_vendor_and_order_number_from_parent(self, project, stages, create_user, workspace):
+        from plane.db.models import Vendor
+
+        vendor = Vendor.objects.create(name="Denim Kreations", workspace=workspace)
+        parent = Issue.objects.create(
+            name="Parent order", project=project, workspace=project.workspace, state=stages["cutting"], created_by=create_user
+        )
+        OrderDetail.objects.filter(issue=parent).update(vendor=vendor, order_number="PO-100")
+
+        child = Issue.objects.create(
+            name="Child order",
+            project=project,
+            workspace=project.workspace,
+            state=stages["cutting"],
+            parent=parent,
+            created_by=create_user,
+        )
+
+        child_order_detail = OrderDetail.objects.get(issue=child)
+        assert child_order_detail.vendor_id == vendor.id
+        assert child_order_detail.order_number == "PO-100"
+
+    @pytest.mark.django_db
+    def test_new_sub_issue_inherits_tna_plan_target_dates_from_parent(self, project, stages, create_user):
+        parent = Issue.objects.create(
+            name="Parent order", project=project, workspace=project.workspace, state=stages["cutting"], created_by=create_user
+        )
+        TaskStateTarget.objects.create(
+            issue=parent, state=stages["stitching"], project=project, target_date="2026-01-15"
+        )
+
+        child = Issue.objects.create(
+            name="Child order",
+            project=project,
+            workspace=project.workspace,
+            state=stages["cutting"],
+            parent=parent,
+            created_by=create_user,
+        )
+
+        child_target = TaskStateTarget.objects.get(issue=child, state=stages["stitching"])
+        assert str(child_target.target_date) == "2026-01-15"
+        assert child_target.entered_at is None
+
+    @pytest.mark.django_db
+    def test_child_created_directly_into_a_targeted_state_gets_entered_at_backfilled(self, project, stages, create_user):
+        parent = Issue.objects.create(
+            name="Parent order", project=project, workspace=project.workspace, state=stages["cutting"], created_by=create_user
+        )
+        TaskStateTarget.objects.create(issue=parent, state=stages["cutting"], project=project, target_date="2026-01-15")
+
+        # child is created straight into "cutting" - the same state the parent has a target for
+        child = Issue.objects.create(
+            name="Child order",
+            project=project,
+            workspace=project.workspace,
+            state=stages["cutting"],
+            parent=parent,
+            created_by=create_user,
+        )
+
+        child_target = TaskStateTarget.objects.get(issue=child, state=stages["cutting"])
+        assert child_target.entered_at is not None
+
+    @pytest.mark.django_db
+    def test_editing_child_after_creation_does_not_affect_parent(self, project, stages, create_user, workspace):
+        from plane.db.models import Vendor
+
+        vendor = Vendor.objects.create(name="Denim Kreations", workspace=workspace)
+        other_vendor = Vendor.objects.create(name="Ultra Denim", workspace=workspace)
+        parent = Issue.objects.create(
+            name="Parent order", project=project, workspace=project.workspace, state=stages["cutting"], created_by=create_user
+        )
+        OrderDetail.objects.filter(issue=parent).update(vendor=vendor)
+        child = Issue.objects.create(
+            name="Child order",
+            project=project,
+            workspace=project.workspace,
+            state=stages["cutting"],
+            parent=parent,
+            created_by=create_user,
+        )
+
+        OrderDetail.objects.filter(issue=child).update(vendor=other_vendor)
+
+        parent_order_detail = OrderDetail.objects.get(issue=parent)
+        assert parent_order_detail.vendor_id == vendor.id
+
+    @pytest.mark.django_db
+    def test_reparenting_an_existing_issue_does_not_trickle_down(self, project, stages, create_user, workspace):
+        from plane.db.models import Vendor
+
+        vendor = Vendor.objects.create(name="Denim Kreations", workspace=workspace)
+        parent = Issue.objects.create(
+            name="Parent order", project=project, workspace=project.workspace, state=stages["cutting"], created_by=create_user
+        )
+        OrderDetail.objects.filter(issue=parent).update(vendor=vendor, order_number="PO-100")
+
+        existing_issue = Issue.objects.create(
+            name="Existing order", project=project, workspace=project.workspace, state=stages["cutting"], created_by=create_user
+        )
+
+        # re-parenting is an update, not a creation - should not trickle down
+        existing_issue.parent = parent
+        existing_issue.save()
+
+        existing_order_detail = OrderDetail.objects.get(issue=existing_issue)
+        assert existing_order_detail.vendor_id is None
+        assert existing_order_detail.order_number == ""
+
+    @pytest.mark.django_db
+    def test_top_level_issue_without_parent_gets_no_trickle_down(self, project, stages, create_user):
+        issue = Issue.objects.create(
+            name="Standalone order", project=project, workspace=project.workspace, state=stages["cutting"], created_by=create_user
+        )
+        order_detail = OrderDetail.objects.get(issue=issue)
+        assert order_detail.vendor_id is None
+        assert order_detail.order_number == ""
+        assert not TaskStateTarget.objects.filter(issue=issue).exists()
+
+
+@pytest.mark.unit
 class TestTaskStateTargetLifecycle:
     @pytest.mark.django_db
     def test_setting_a_target_for_the_current_state_does_not_backfill_entered_at(self, project, stages, create_user):

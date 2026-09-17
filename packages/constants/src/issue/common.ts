@@ -240,6 +240,10 @@ export const SPREADSHEET_PROPERTY_LIST: (keyof IIssueDisplayProperties)[] = [
   "link",
   "attachment_count",
   "sub_issue_count",
+  "vendor",
+  "category",
+  "requested_delivery_date",
+  "order_number",
 ];
 
 export const SPREADSHEET_PROPERTY_DETAILS: {
@@ -363,6 +367,38 @@ export const SPREADSHEET_PROPERTY_DETAILS: {
     descendingOrderKey: "sub_issues_count",
     descendingOrderTitle: "Least",
     icon: "LayersIcon",
+  },
+  vendor: {
+    i18n_title: "common.vendor",
+    ascendingOrderKey: "vendor_id",
+    ascendingOrderTitle: "A",
+    descendingOrderKey: "-vendor_id",
+    descendingOrderTitle: "Z",
+    icon: "Building2",
+  },
+  category: {
+    i18n_title: "common.category",
+    ascendingOrderKey: "category",
+    ascendingOrderTitle: "A",
+    descendingOrderKey: "-category",
+    descendingOrderTitle: "Z",
+    icon: "Boxes",
+  },
+  requested_delivery_date: {
+    i18n_title: "common.requested_delivery_date",
+    ascendingOrderKey: "-requested_delivery_date",
+    ascendingOrderTitle: "New",
+    descendingOrderKey: "requested_delivery_date",
+    descendingOrderTitle: "Old",
+    icon: "CalendarClock",
+  },
+  order_number: {
+    i18n_title: "common.order_number",
+    ascendingOrderKey: "order_number",
+    ascendingOrderTitle: "A",
+    descendingOrderKey: "-order_number",
+    descendingOrderTitle: "Z",
+    icon: "Barcode",
   },
 };
 

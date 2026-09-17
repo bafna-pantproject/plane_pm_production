@@ -18,3 +18,7 @@ export * from "./sub-issue-column";
 export * from "./updated-on-column";
 export * from "./module-column";
 export * from "./cycle-column";
+export * from "./vendor-column";
+export * from "./category-column";
+export * from "./requested-delivery-date-column";
+export * from "./order-number-column";

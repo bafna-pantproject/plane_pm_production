@@ -10,7 +10,7 @@ import { extractInstruction } from "@atlaskit/pragmatic-drag-and-drop-hitbox/tre
 import { clone, isNil, pull, uniq, concat } from "lodash-es";
 import scrollIntoView from "smooth-scroll-into-view-if-needed";
 import type { FC } from "react";
-import { CalendarDays, LayersIcon, Paperclip } from "lucide-react";
+import { Barcode, Boxes, Building2, CalendarClock, CalendarDays, LayersIcon, Paperclip } from "lucide-react";
 // plane types
 import { EIconSize, ISSUE_PRIORITIES, STATE_GROUPS } from "@plane/constants";
 import { Logo } from "@plane/propel/emoji-icon-picker";
@@ -71,6 +71,10 @@ import {
   SpreadsheetStateColumn,
   SpreadsheetSubIssueColumn,
   SpreadsheetUpdatedOnColumn,
+  SpreadsheetVendorColumn,
+  SpreadsheetCategoryColumn,
+  SpreadsheetRequestedDeliveryDateColumn,
+  SpreadsheetOrderNumberColumn,
 } from "@/components/issues/issue-layouts/spreadsheet/columns";
 
 export const HIGHLIGHT_CLASS = "highlight";
@@ -886,6 +890,10 @@ export const SpreadSheetPropertyIconMap: Record<string, FC<ISvgIcons>> = {
   Link2: LinkIcon,
   Paperclip: Paperclip,
   LayersIcon: LayersIcon,
+  Building2: Building2,
+  Boxes: Boxes,
+  CalendarClock: CalendarClock,
+  Barcode: Barcode,
 };
 
 export const SPREADSHEET_COLUMNS: { [key in keyof IIssueDisplayProperties]: TSpreadsheetColumn } = {
@@ -903,6 +911,10 @@ export const SPREADSHEET_COLUMNS: { [key in keyof IIssueDisplayProperties]: TSpr
   sub_issue_count: SpreadsheetSubIssueColumn,
   updated_on: SpreadsheetUpdatedOnColumn,
   attachment_count: SpreadsheetAttachmentColumn,
+  vendor: SpreadsheetVendorColumn,
+  category: SpreadsheetCategoryColumn,
+  requested_delivery_date: SpreadsheetRequestedDeliveryDateColumn,
+  order_number: SpreadsheetOrderNumberColumn,
 };
 
 export const useGroupByOptions = (
