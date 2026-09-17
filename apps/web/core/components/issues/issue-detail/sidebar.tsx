@@ -27,7 +27,6 @@ import {
   cn,
   composeOrderDetailName,
   getDate,
-  renderFormattedDate,
   renderFormattedPayloadDate,
   shouldHighlightIssueDueDate,
 } from "@plane/utils";
@@ -52,10 +51,12 @@ import useDebounce from "@/hooks/use-debounce";
 // components
 import { IssueParentSelectRoot } from "@/components/issues/parent-select-root";
 import { SidebarPropertyListItem } from "@/components/common/layout/sidebar/property-list-item";
+import { useDateChangeReason } from "@/hooks/use-date-change-reason";
 import { CatalogSelect } from "./catalog-select";
 import { IssueCycleSelect } from "./cycle-select";
 import { IssueLabel } from "./label";
 import { IssueModuleSelect } from "./module-select";
+import { ReasonConfirmationModal } from "./reason-confirmation-modal";
 import type { TIssueOperations } from "./root";
 import { IssueTNAPlan } from "./tna-plan";
 
@@ -83,6 +84,21 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
   const { workspacePurchaseOrders, createPurchaseOrder } = usePurchaseOrder();
   const { getOrderDetailByIssueId, fetchIssueOrderDetail, updateIssueOrderDetail } = useOrderDetail();
   const orderDetail = getOrderDetailByIssueId(issueId);
+
+  // reason-required confirmation for changing an already-set due date / requested delivery date
+  const { requestChange: requestDueDateChange, reasonModalProps: dueDateReasonModalProps } = useDateChangeReason({
+    workspaceSlug,
+    projectId,
+    issueId,
+    commentLabel: "Vendor Promised Delivery Date Changed",
+  });
+  const { requestChange: requestRequestedDeliveryDateChange, reasonModalProps: requestedDeliveryDateReasonModalProps } =
+    useDateChangeReason({
+      workspaceSlug,
+      projectId,
+      issueId,
+      commentLabel: "Requested Delivery Date Changed",
+    });
 
   // the project-wide bulk fetch (project-wrapper.tsx) may not have completed yet when the
   // sidebar first mounts, so backstop it with a fetch scoped to just this issue.
@@ -244,9 +260,11 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
                   placeholder={t("issue.add.due_date")}
                   value={issue.target_date}
                   onChange={(val) =>
-                    issueOperations.update(workspaceSlug, projectId, issueId, {
-                      target_date: val ? renderFormattedPayloadDate(val) : null,
-                    })
+                    requestDueDateChange(!!issue.target_date, () =>
+                      issueOperations.update(workspaceSlug, projectId, issueId, {
+                        target_date: val ? renderFormattedPayloadDate(val) : null,
+                      })
+                    )
                   }
                   minDate={minDate ?? undefined}
                   disabled={!isEditable}
@@ -411,7 +429,9 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
                 placeholder={t("common.requested_delivery_date")}
                 value={orderDetail?.requested_delivery_date ?? null}
                 onChange={(val) =>
-                  updateOrderDetail({ requested_delivery_date: val ? renderFormattedPayloadDate(val) : null })
+                  requestRequestedDeliveryDateChange(!!orderDetail?.requested_delivery_date, () =>
+                    updateOrderDetail({ requested_delivery_date: val ? renderFormattedPayloadDate(val) : null })
+                  )
                 }
                 disabled={!isEditable}
                 buttonVariant="transparent-with-text"
@@ -425,10 +445,27 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
           </div>
 
           <div className="mt-5">
-            <IssueTNAPlan workspaceSlug={workspaceSlug} projectId={projectId} issueId={issueId} disabled={!isEditable} />
+            <IssueTNAPlan
+              workspaceSlug={workspaceSlug}
+              projectId={projectId}
+              issueId={issueId}
+              disabled={!isEditable}
+              subIssuesCount={issue.sub_issues_count ?? 0}
+            />
           </div>
         </div>
       </div>
+
+      <ReasonConfirmationModal
+        {...dueDateReasonModalProps}
+        title={t("common.due_date_change_reason_title")}
+        description={t("common.due_date_change_reason_description")}
+      />
+      <ReasonConfirmationModal
+        {...requestedDeliveryDateReasonModalProps}
+        title={t("common.requested_delivery_date_change_reason_title")}
+        description={t("common.requested_delivery_date_change_reason_description")}
+      />
     </>
   );
 });

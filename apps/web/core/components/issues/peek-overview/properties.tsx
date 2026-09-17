@@ -36,10 +36,12 @@ import { useProject } from "@/hooks/store/use-project";
 import { useProjectState } from "@/hooks/store/use-project-state";
 // plane web components
 import { IssueParentSelectRoot } from "@/components/issues/parent-select-root";
+import { useDateChangeReason } from "@/hooks/use-date-change-reason";
 import type { TIssueOperations } from "../issue-detail";
 import { IssueCycleSelect } from "../issue-detail/cycle-select";
 import { IssueLabel } from "../issue-detail/label";
 import { IssueModuleSelect } from "../issue-detail/module-select";
+import { ReasonConfirmationModal } from "../issue-detail/reason-confirmation-modal";
 import { IssueTNAPlan } from "../issue-detail/tna-plan";
 
 interface IPeekOverviewProperties {
@@ -60,6 +62,13 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
   } = useIssueDetail();
   const { getStateById } = useProjectState();
   const { getUserDetails } = useMember();
+  // reason-required confirmation for changing an already-set due date
+  const { requestChange: requestDueDateChange, reasonModalProps: dueDateReasonModalProps } = useDateChangeReason({
+    workspaceSlug,
+    projectId,
+    issueId,
+    commentLabel: "Vendor Promised Delivery Date Changed",
+  });
   // derived values
   const issue = getIssueById(issueId);
   if (!issue) return <></>;
@@ -141,9 +150,11 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
             <DateDropdown
               value={issue.target_date}
               onChange={(val) =>
-                issueOperations.update(workspaceSlug, projectId, issueId, {
-                  target_date: val ? renderFormattedPayloadDate(val) : null,
-                })
+                requestDueDateChange(!!issue.target_date, () =>
+                  issueOperations.update(workspaceSlug, projectId, issueId, {
+                    target_date: val ? renderFormattedPayloadDate(val) : null,
+                  })
+                )
               }
               placeholder={t("issue.add.due_date")}
               buttonVariant="transparent-with-text"
@@ -229,8 +240,15 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
           issueId={issueId}
           disabled={disabled}
           textClassName="text-body-xs-medium"
+          subIssuesCount={issue?.sub_issues_count ?? 0}
         />
       </div>
+
+      <ReasonConfirmationModal
+        {...dueDateReasonModalProps}
+        title={t("common.due_date_change_reason_title")}
+        description={t("common.due_date_change_reason_description")}
+      />
     </div>
   );
 });

@@ -90,6 +90,7 @@ from .order import (
     PurchaseOrderViewSet,
     IssueStateTargetsEndpoint,
     IssueStateTargetDetailEndpoint,
+    IssueStateTargetCascadeEndpoint,
     IssueOrderDetailEndpoint,
     ProjectOrderDetailsEndpoint,
     ProjectOrderDetailCategoriesEndpoint,

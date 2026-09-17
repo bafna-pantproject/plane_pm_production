@@ -27,6 +27,7 @@ export interface ITaskStateTargetStore {
     stateId: string,
     targetDate: string | null
   ) => Promise<void>;
+  cascadeStateTargetsToSubIssues: (workspaceSlug: string, projectId: string, issueId: string) => Promise<string[]>;
 }
 
 export class TaskStateTargetStore implements ITaskStateTargetStore {
@@ -41,6 +42,7 @@ export class TaskStateTargetStore implements ITaskStateTargetStore {
       fetchedMap: observable,
       fetchIssueStateTargets: action,
       setIssueStateTarget: action,
+      cascadeStateTargetsToSubIssues: action,
     });
 
     this.rootStore = _rootStore;
@@ -74,14 +76,24 @@ export class TaskStateTargetStore implements ITaskStateTargetStore {
     const existing = this.getIssueStateTarget(issueId, stateId);
 
     if (existing) {
-      const response = await this.taskStateTargetService.patchStateTarget(workspaceSlug, projectId, issueId, existing.id, {
-        target_date: targetDate,
-      });
+      const response = await this.taskStateTargetService.patchStateTarget(
+        workspaceSlug,
+        projectId,
+        issueId,
+        existing.id,
+        {
+          target_date: targetDate,
+        }
+      );
       runInAction(() => {
         const current = this.stateTargetsByIssueId[issueId] ?? [];
         if (!response) {
           // sparse cleanup: the backend deleted the now-empty row.
-          set(this.stateTargetsByIssueId, [issueId], current.filter((target) => target.id !== existing.id));
+          set(
+            this.stateTargetsByIssueId,
+            [issueId],
+            current.filter((target) => target.id !== existing.id)
+          );
         } else {
           set(
             this.stateTargetsByIssueId,
@@ -103,5 +115,23 @@ export class TaskStateTargetStore implements ITaskStateTargetStore {
       const current = this.stateTargetsByIssueId[issueId] ?? [];
       set(this.stateTargetsByIssueId, [issueId], [...current, response]);
     });
+  };
+
+  cascadeStateTargetsToSubIssues = async (workspaceSlug: string, projectId: string, issueId: string) => {
+    const response = await this.taskStateTargetService.cascadeStateTargetsToSubIssues(
+      workspaceSlug,
+      projectId,
+      issueId
+    );
+    const updatedIssueIds = response?.updated_issue_ids ?? [];
+    runInAction(() => {
+      // drop any cached targets for the affected sub work items so the next time
+      // one of them is viewed, it refetches instead of showing stale data.
+      updatedIssueIds.forEach((childIssueId) => {
+        delete this.stateTargetsByIssueId[childIssueId];
+        delete this.fetchedMap[childIssueId];
+      });
+    });
+    return updatedIssueIds;
   };
 }

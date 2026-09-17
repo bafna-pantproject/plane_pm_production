@@ -16,7 +16,7 @@ from plane.app.serializers import (
     TaskStateTargetSerializer,
     VendorSerializer,
 )
-from plane.db.models import OrderDetail, PurchaseOrder, State, Style, TaskStateTarget, Vendor, Workspace
+from plane.db.models import Issue, OrderDetail, PurchaseOrder, State, Style, TaskStateTarget, Vendor, Workspace
 
 
 class VendorViewSet(BaseViewSet):
@@ -184,6 +184,43 @@ class IssueStateTargetDetailEndpoint(BaseAPIView):
     def delete(self, request, slug, project_id, issue_id, pk):
         TaskStateTarget.objects.filter(pk=pk, issue_id=issue_id, project_id=project_id, workspace__slug=slug).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class IssueStateTargetCascadeEndpoint(BaseAPIView):
+    """Pushes the parent issue's current TNA plan (per-state target dates) down
+    onto its direct sub work items, on demand. Overwrites a target date a child
+    already had for the same state - this is a one-time push, not an ongoing
+    link, so children stay independently editable again right after."""
+
+    @allow_permission([ROLE.ADMIN, ROLE.MEMBER])
+    def post(self, request, slug, project_id, issue_id):
+        parent_targets = list(
+            TaskStateTarget.objects.filter(
+                workspace__slug=slug,
+                project_id=project_id,
+                issue_id=issue_id,
+                target_date__isnull=False,
+            )
+        )
+        if not parent_targets:
+            return Response({"updated_issue_ids": []}, status=status.HTTP_200_OK)
+
+        child_issue_ids = list(
+            Issue.issue_objects.filter(parent_id=issue_id, project_id=project_id).values_list("id", flat=True)
+        )
+
+        for child_issue_id in child_issue_ids:
+            for parent_target in parent_targets:
+                TaskStateTarget.objects.update_or_create(
+                    issue_id=child_issue_id,
+                    state_id=parent_target.state_id,
+                    defaults={"project_id": project_id, "target_date": parent_target.target_date},
+                )
+
+        return Response(
+            {"updated_issue_ids": [str(child_issue_id) for child_issue_id in child_issue_ids]},
+            status=status.HTTP_200_OK,
+        )
 
 
 class IssueOrderDetailEndpoint(BaseAPIView):

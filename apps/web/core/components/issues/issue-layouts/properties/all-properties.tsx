@@ -34,6 +34,7 @@ import { ModuleDropdown } from "@/components/dropdowns/module/dropdown";
 import { PriorityDropdown } from "@/components/dropdowns/priority";
 import { StateDropdown } from "@/components/dropdowns/state/dropdown";
 import { CatalogSelect } from "@/components/issues/issue-detail/catalog-select";
+import { ReasonConfirmationModal } from "@/components/issues/issue-detail/reason-confirmation-modal";
 // hooks
 import { useProjectEstimates } from "@/hooks/store/estimates";
 import { useIssues } from "@/hooks/store/use-issues";
@@ -43,6 +44,7 @@ import { useProject } from "@/hooks/store/use-project";
 import { useProjectState } from "@/hooks/store/use-project-state";
 import { useVendor } from "@/hooks/store/use-vendor";
 import { useAppRouter } from "@/hooks/use-app-router";
+import { useDateChangeReason } from "@/hooks/use-date-change-reason";
 import { useIssueStoreType } from "@/hooks/use-issue-layout-store";
 import { usePlatformOS } from "@/hooks/use-platform-os";
 // local components
@@ -83,6 +85,21 @@ export const IssueProperties = observer(function IssueProperties(props: IIssuePr
   // router
   const router = useAppRouter();
   const { workspaceSlug, projectId } = useParams();
+
+  // reason-required confirmation for changing an already-set due date / requested delivery date
+  const { requestChange: requestDueDateChange, reasonModalProps: dueDateReasonModalProps } = useDateChangeReason({
+    workspaceSlug: workspaceSlug?.toString(),
+    projectId: issue.project_id,
+    issueId: issue.id,
+    commentLabel: "Vendor Promised Delivery Date Changed",
+  });
+  const { requestChange: requestRequestedDeliveryDateChange, reasonModalProps: requestedDeliveryDateReasonModalProps } =
+    useDateChangeReason({
+      workspaceSlug: workspaceSlug?.toString(),
+      projectId: issue.project_id,
+      issueId: issue.id,
+      commentLabel: "Requested Delivery Date Changed",
+    });
 
   // derived values
   const stateDetails = getStateById(issue.state_id);
@@ -261,7 +278,8 @@ export const IssueProperties = observer(function IssueProperties(props: IIssuePr
             }}
             onSelect={(range) => {
               handleStartDate(range?.from ?? null);
-              handleTargetDate(range?.to ?? null);
+              // isDateRangeEnabled guarantees target_date is already set here
+              requestDueDateChange(true, () => handleTargetDate(range?.to ?? null));
             }}
             hideIcon={{
               from: false,
@@ -316,7 +334,7 @@ export const IssueProperties = observer(function IssueProperties(props: IIssuePr
         <div className="h-5" onFocus={handleEventPropagation} onClick={handleEventPropagation}>
           <DateDropdown
             value={issue?.target_date ?? null}
-            onChange={handleTargetDate}
+            onChange={(val) => requestDueDateChange(!!issue.target_date, () => handleTargetDate(val))}
             minDate={minDate}
             placeholder={t("common.order_by.due_date")}
             icon={<DueDatePropertyIcon className="h-3 w-3 shrink-0" />}
@@ -575,7 +593,11 @@ export const IssueProperties = observer(function IssueProperties(props: IIssuePr
         <div className="h-5" onFocus={handleEventPropagation} onClick={handleEventPropagation}>
           <DateDropdown
             value={issue.requested_delivery_date ?? null}
-            onChange={handleRequestedDeliveryDate}
+            onChange={(val) =>
+              requestRequestedDeliveryDateChange(!!issue.requested_delivery_date, () =>
+                handleRequestedDeliveryDate(val)
+              )
+            }
             placeholder={t("common.requested_delivery_date")}
             icon={<CalendarClock className="h-3 w-3 flex-shrink-0" />}
             buttonVariant={issue.requested_delivery_date ? "border-with-text" : "border-without-text"}
@@ -587,6 +609,17 @@ export const IssueProperties = observer(function IssueProperties(props: IIssuePr
           />
         </div>
       </WithDisplayPropertiesHOC>
+
+      <ReasonConfirmationModal
+        {...dueDateReasonModalProps}
+        title={t("common.due_date_change_reason_title")}
+        description={t("common.due_date_change_reason_description")}
+      />
+      <ReasonConfirmationModal
+        {...requestedDeliveryDateReasonModalProps}
+        title={t("common.requested_delivery_date_change_reason_title")}
+        description={t("common.requested_delivery_date_change_reason_description")}
+      />
     </div>
   );
 });

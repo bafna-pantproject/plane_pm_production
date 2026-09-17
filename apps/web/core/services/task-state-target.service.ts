@@ -63,4 +63,16 @@ export class TaskStateTargetService extends APIService {
       throw error?.response?.data;
     });
   }
+
+  async cascadeStateTargetsToSubIssues(
+    workspaceSlug: string,
+    projectId: string,
+    issueId: string
+  ): Promise<{ updated_issue_ids: string[] }> {
+    return this.post(`/api/workspaces/${workspaceSlug}/projects/${projectId}/issues/${issueId}/state-targets/cascade/`)
+      .then((response) => response?.data)
+      .catch((error) => {
+        throw error?.response?.data;
+      });
+  }
 }
