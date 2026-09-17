@@ -86,6 +86,7 @@ class PurchaseOrder(WorkspaceBaseModel):
 
 class OrderDetail(ProjectBaseModel):
     issue = models.OneToOneField("db.Issue", on_delete=models.CASCADE, related_name="order_detail")
+    order_number = models.CharField(max_length=255, blank=True)
     category = models.CharField(max_length=255, blank=True)
     quantity = models.PositiveIntegerField(null=True, blank=True, validators=[MinValueValidator(1)])
     vendor = models.ForeignKey(

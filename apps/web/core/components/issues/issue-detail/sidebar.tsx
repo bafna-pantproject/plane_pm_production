@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { Building2, CalendarClock, Hash, Receipt, Tag } from "lucide-react";
+import { Barcode, Boxes, Building2, CalendarClock, Hash, Receipt, Tag } from "lucide-react";
 import { observer } from "mobx-react";
 import { useEffect, useState } from "react";
 // i18n
@@ -96,13 +96,14 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
 
   // work items that use category/vendor/quantity display that composite as their name
   // wherever the app just shows the plain title (kanban/list/calendar boards); keep it in
-  // sync when vendor or quantity change here too, not just from the create/edit modal.
-  const syncDerivedName = (overrides: { vendorId?: string | null; quantity?: number | null }) => {
-    if (!orderDetail?.category) return;
-    const vendorId = "vendorId" in overrides ? overrides.vendorId : orderDetail.vendor;
-    const quantity = "quantity" in overrides ? overrides.quantity : orderDetail.quantity;
+  // sync when category, vendor or quantity change here too, not just from the create/edit modal.
+  const syncDerivedName = (overrides: { category?: string; vendorId?: string | null; quantity?: number | null }) => {
+    const category = "category" in overrides ? overrides.category : orderDetail?.category;
+    if (!category) return;
+    const vendorId = "vendorId" in overrides ? overrides.vendorId : orderDetail?.vendor;
+    const quantity = "quantity" in overrides ? overrides.quantity : orderDetail?.quantity;
     const vendorName = vendorId ? getVendorById(vendorId)?.name : undefined;
-    const derivedName = composeOrderDetailName(orderDetail.category, vendorName, quantity);
+    const derivedName = composeOrderDetailName(category, vendorName, quantity);
     if (derivedName) issueOperations.update(workspaceSlug, projectId, issueId, { name: derivedName });
   };
 
@@ -110,6 +111,41 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
     updateOrderDetail({ vendor: vendorId });
     syncDerivedName({ vendorId });
   };
+
+  // local editable copy of order number, since it's free-typed rather than picked from a
+  // dropdown; debounced and synced back from the store like the issue title input.
+  const [orderNumberInput, setOrderNumberInput] = useState(orderDetail?.order_number ?? "");
+  const debouncedOrderNumberInput = useDebounce(orderNumberInput, 800);
+
+  useEffect(() => {
+    setOrderNumberInput(orderDetail?.order_number ?? "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderDetail?.order_number]);
+
+  useEffect(() => {
+    const trimmedOrderNumber = debouncedOrderNumberInput.trim();
+    if (trimmedOrderNumber === (orderDetail?.order_number ?? "")) return;
+    updateOrderDetail({ order_number: trimmedOrderNumber });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedOrderNumberInput]);
+
+  // local editable copy of category, since it's free-typed rather than picked from a
+  // dropdown; debounced and synced back from the store like the issue title input.
+  const [categoryInput, setCategoryInput] = useState(orderDetail?.category ?? "");
+  const debouncedCategoryInput = useDebounce(categoryInput, 800);
+
+  useEffect(() => {
+    setCategoryInput(orderDetail?.category ?? "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderDetail?.category]);
+
+  useEffect(() => {
+    const trimmedCategory = debouncedCategoryInput.trim();
+    if (trimmedCategory === (orderDetail?.category ?? "")) return;
+    updateOrderDetail({ category: trimmedCategory });
+    syncDerivedName({ category: trimmedCategory });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedCategoryInput]);
 
   // local editable copy of quantity, since it's free-typed rather than picked from a
   // dropdown; debounced and synced back from the store like the issue title input.
@@ -291,6 +327,28 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
                 projectId={projectId}
                 issueId={issueId}
                 disabled={!isEditable}
+              />
+            </SidebarPropertyListItem>
+
+            <SidebarPropertyListItem icon={Barcode} label={t("common.order_number")}>
+              <Input
+                type="text"
+                value={orderNumberInput}
+                onChange={(e) => setOrderNumberInput(e.target.value)}
+                disabled={!isEditable}
+                placeholder={t("common.order_number")}
+                className="h-7.5 w-full grow border-none bg-transparent text-body-xs-regular"
+              />
+            </SidebarPropertyListItem>
+
+            <SidebarPropertyListItem icon={Boxes} label={t("common.category")}>
+              <Input
+                type="text"
+                value={categoryInput}
+                onChange={(e) => setCategoryInput(e.target.value)}
+                disabled={!isEditable}
+                placeholder={t("common.category")}
+                className="h-7.5 w-full grow border-none bg-transparent text-body-xs-regular"
               />
             </SidebarPropertyListItem>
 

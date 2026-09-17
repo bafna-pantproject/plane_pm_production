@@ -32,7 +32,7 @@ row_mapping = {
     "labels__id": "Label",
     "assignees__id": "Assignee Name",
     "start_date": "Start Date",
-    "target_date": "Due Date",
+    "target_date": "Vendor Promised Delivery Date",
     "completed_at": "Completed At",
     "created_at": "Created At",
     "issue_count": "Issue Count",

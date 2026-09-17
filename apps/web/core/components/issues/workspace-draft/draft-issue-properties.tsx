@@ -174,7 +174,7 @@ export const DraftIssueProperties = observer(function DraftIssueProperties(props
           value={issue?.target_date ?? null}
           onChange={handleTargetDate}
           minDate={minDate}
-          placeholder="Due date"
+          placeholder="Vendor promised delivery date"
           icon={<DueDatePropertyIcon className="h-3 w-3 flex-shrink-0" />}
           buttonVariant={issue.target_date ? "border-with-text" : "border-without-text"}
           buttonClassName={

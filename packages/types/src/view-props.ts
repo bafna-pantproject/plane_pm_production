@@ -187,6 +187,7 @@ export interface IIssueDisplayProperties {
   vendor?: boolean;
   category?: boolean;
   requested_delivery_date?: boolean;
+  order_number?: boolean;
 }
 
 export type TIssueKanbanFilters = {

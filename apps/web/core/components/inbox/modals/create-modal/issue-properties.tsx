@@ -122,7 +122,7 @@ export const InboxIssueProperties = observer(function InboxIssueProperties(props
           onChange={(date) => handleData("target_date", date ? renderFormattedPayloadDate(date) : "")}
           buttonVariant="border-with-text"
           minDate={minDate ?? undefined}
-          placeholder="Due date"
+          placeholder="Vendor promised delivery date"
           tabIndex={getIndex("target_date")}
         />
       </div>

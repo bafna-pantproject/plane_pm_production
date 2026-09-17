@@ -5,12 +5,16 @@
  * See the LICENSE file for details.
  */
 
+import { Barcode } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { observer } from "mobx-react";
 // plane imports
 import type { EditorRefApi } from "@plane/editor";
 import type { TNameDescriptionLoader } from "@plane/types";
 import { EFileAssetType, EIssueServiceType } from "@plane/types";
+import { Input } from "@plane/ui";
+// i18n
+import { useTranslation } from "@plane/i18n";
 // components
 import { DescriptionVersionsRoot } from "@/components/core/description-versions";
 import { DescriptionInput } from "@/components/editor/rich-text/description-input";
@@ -18,7 +22,9 @@ import { IssueTypeSwitcher } from "@/components/issues/issue-type-switcher";
 // hooks
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
 import { useMember } from "@/hooks/store/use-member";
+import { useOrderDetail } from "@/hooks/store/use-order-detail";
 import { useUser } from "@/hooks/store/user";
+import useDebounce from "@/hooks/use-debounce";
 import useReloadConfirmations from "@/hooks/use-reload-confirmation";
 import useSize from "@/hooks/use-window-size";
 // services
@@ -51,6 +57,7 @@ export const IssueMainContent = observer(function IssueMainContent(props: Props)
   // states
   const [isSubmitting, setIsSubmitting] = useState<TNameDescriptionLoader>("saved");
   // hooks
+  const { t } = useTranslation();
   const windowSize = useSize();
   const { data: currentUser } = useUser();
   const { getUserDetails } = useMember();
@@ -59,8 +66,34 @@ export const IssueMainContent = observer(function IssueMainContent(props: Props)
     peekIssue,
   } = useIssueDetail();
   const { setShowAlert } = useReloadConfirmations(isSubmitting === "submitting");
+  const { getOrderDetailByIssueId, fetchIssueOrderDetail, updateIssueOrderDetail } = useOrderDetail();
   // derived values
   const issue = issueId ? getIssueById(issueId) : undefined;
+  const orderDetail = issue?.project_id ? getOrderDetailByIssueId(issueId) : null;
+
+  // the project-wide bulk fetch (project-wrapper.tsx) may not have completed yet when this
+  // mounts, so backstop it with a fetch scoped to just this issue (mirrors sidebar.tsx).
+  useEffect(() => {
+    if (!orderDetail && issue?.project_id) fetchIssueOrderDetail(workspaceSlug, issue.project_id, issueId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workspaceSlug, issue?.project_id, issueId]);
+
+  // local editable copy of order number, since it's free-typed rather than picked from a
+  // dropdown; debounced and synced back from the store like the sidebar's order number input.
+  const [orderNumberInput, setOrderNumberInput] = useState(orderDetail?.order_number ?? "");
+  const debouncedOrderNumberInput = useDebounce(orderNumberInput, 800);
+
+  useEffect(() => {
+    setOrderNumberInput(orderDetail?.order_number ?? "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderDetail?.order_number]);
+
+  useEffect(() => {
+    const trimmedOrderNumber = debouncedOrderNumberInput.trim();
+    if (!issue?.project_id || trimmedOrderNumber === (orderDetail?.order_number ?? "")) return;
+    updateIssueOrderDetail(workspaceSlug, issue.project_id, issueId, { order_number: trimmedOrderNumber });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedOrderNumberInput]);
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
@@ -106,6 +139,18 @@ export const IssueMainContent = observer(function IssueMainContent(props: Props)
           value={issue.name}
           containerClassName="-ml-3"
         />
+
+        <div className="-mb-1.5 flex items-center gap-2">
+          <Barcode className="h-3.5 w-3.5 flex-shrink-0 text-secondary" strokeWidth={2} />
+          <Input
+            type="text"
+            value={orderNumberInput}
+            onChange={(e) => setOrderNumberInput(e.target.value)}
+            disabled={isArchived || !isEditable}
+            placeholder={t("common.order_number")}
+            className="h-7 w-auto min-w-40 grow-0 border-none bg-transparent px-1 text-body-xs-regular"
+          />
+        </div>
 
         <DescriptionInput
           issueSequenceId={issue.sequence_id}

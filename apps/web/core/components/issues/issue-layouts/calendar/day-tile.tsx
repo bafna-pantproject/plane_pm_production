@@ -113,7 +113,7 @@ export const CalendarDayTile = observer(function CalendarDayTile(props: Props) {
               setToast({
                 type: TOAST_TYPE.ERROR,
                 title: "Error!",
-                message: "Due date cannot be before the start date of the work item.",
+                message: "Vendor promised delivery date cannot be before the start date of the work item.",
               });
               return;
             }

@@ -393,6 +393,12 @@ def filter_purchase_order(params, issue_filter, method, prefix=""):
     return issue_filter
 
 
+def filter_order_number(params, issue_filter, method, prefix=""):
+    if params.get("order_number", "") != "":
+        issue_filter[f"{prefix}order_detail__order_number__icontains"] = params.get("order_number")
+    return issue_filter
+
+
 def filter_intake_status(params, issue_filter, method, prefix=""):
     if method == "GET":
         status = [item for item in params.get("intake_status").split(",") if item != "null"]
@@ -498,6 +504,7 @@ def issue_filters(query_params, method, prefix=""):
         "vendor": filter_vendor,
         "style": filter_style,
         "purchase_order": filter_purchase_order,
+        "order_number": filter_order_number,
         "intake_status": filter_intake_status,
         "inbox_status": filter_inbox_status,
         "sub_issue": filter_sub_issue_toggle,

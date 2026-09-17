@@ -141,10 +141,10 @@ export const InboxIssueContentProperties = observer(function InboxIssueContentPr
             <div className="flex h-8 items-center gap-2">
               <div className="flex w-2/5 flex-shrink-0 items-center gap-1 text-13 text-tertiary">
                 <DueDatePropertyIcon className="h-4 w-4 flex-shrink-0" />
-                <span>Due date</span>
+                <span>Vendor promised delivery date</span>
               </div>
               <DateDropdown
-                placeholder="Add due date"
+                placeholder="Add vendor promised delivery date"
                 value={issue.target_date || null}
                 onChange={(val) =>
                   issue?.id &&

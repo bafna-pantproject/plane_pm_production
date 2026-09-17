@@ -196,6 +196,12 @@ class IssueFilterSet(BaseFilterSet):
     category = filters.CharFilter(field_name="order_detail__category")
     category__in = CharInFilter(field_name="order_detail__category", lookup_expr="in")
 
+    order_number = filters.CharFilter(field_name="order_detail__order_number")
+    order_number__in = CharInFilter(field_name="order_detail__order_number", lookup_expr="in")
+    order_number__icontains = filters.CharFilter(
+        field_name="order_detail__order_number", lookup_expr="icontains"
+    )
+
     # requested_delivery_date is already a plain DateField (unlike created_at/updated_at,
     # which are DateTimeFields), so no "date" lookup_expr extraction trick is needed here.
     requested_delivery_date = filters.DateFilter(field_name="order_detail__requested_delivery_date")

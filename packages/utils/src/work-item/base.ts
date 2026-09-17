@@ -310,6 +310,10 @@ export const getComputedDisplayProperties = (
   modules: displayProperties?.modules ?? true,
   cycle: displayProperties?.cycle ?? true,
   issue_type: displayProperties?.issue_type ?? true,
+  vendor: displayProperties?.vendor ?? true,
+  category: displayProperties?.category ?? true,
+  requested_delivery_date: displayProperties?.requested_delivery_date ?? true,
+  order_number: displayProperties?.order_number ?? true,
 });
 
 export const generateWorkItemLink = ({

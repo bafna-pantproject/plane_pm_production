@@ -447,6 +447,7 @@
     "purchase_order": "Purchase order",
     "purchase_orders": "Purchase orders",
     "requested_delivery_date": "Requested delivery date",
+    "order_number": "Order number",
     "tna_plan": "TNA Plan",
     "target_date": "Target date",
     "entered_at": "Entered",
@@ -536,7 +537,7 @@
       "last_created": "Last created",
       "last_updated": "Last updated",
       "start_date": "Start date",
-      "due_date": "Due date",
+      "due_date": "Vendor promised delivery date",
       "asc": "Ascending",
       "desc": "Descending",
       "updated_on": "Updated on"

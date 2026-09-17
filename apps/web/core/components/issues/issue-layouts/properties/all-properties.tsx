@@ -10,7 +10,7 @@ import { xor } from "lodash-es";
 import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
 // icons
-import { Boxes, CalendarClock, Paperclip } from "lucide-react";
+import { Barcode, Boxes, CalendarClock, Paperclip } from "lucide-react";
 // i18n
 import { useTranslation } from "@plane/i18n";
 import { LinkIcon, StartDatePropertyIcon, ViewsIcon, DueDatePropertyIcon } from "@plane/propel/icons";
@@ -546,6 +546,25 @@ export const IssueProperties = observer(function IssueProperties(props: IIssuePr
           <div className="flex h-5 flex-shrink-0 items-center justify-center gap-2 overflow-hidden rounded-sm border-[0.5px] border-strong px-2.5 py-1">
             <Boxes className="h-3 w-3 flex-shrink-0" strokeWidth={2} />
             <div className="max-w-24 truncate text-caption-sm-regular">{issue.category}</div>
+          </div>
+        </Tooltip>
+      </WithDisplayPropertiesHOC>
+
+      {/* order number - free text, read-only here; edited from the issue sidebar */}
+      <WithDisplayPropertiesHOC
+        displayProperties={displayProperties}
+        displayPropertyKey="order_number"
+        shouldRenderProperty={() => !!issue.order_number}
+      >
+        <Tooltip
+          tooltipHeading={t("common.order_number")}
+          tooltipContent={issue.order_number ?? ""}
+          isMobile={isMobile}
+          renderByDefault={false}
+        >
+          <div className="flex h-5 flex-shrink-0 items-center justify-center gap-2 overflow-hidden rounded-sm border-[0.5px] border-strong px-2.5 py-1">
+            <Barcode className="h-3 w-3 flex-shrink-0" strokeWidth={2} />
+            <div className="max-w-24 truncate text-caption-sm-regular">{issue.order_number}</div>
           </div>
         </Tooltip>
       </WithDisplayPropertiesHOC>

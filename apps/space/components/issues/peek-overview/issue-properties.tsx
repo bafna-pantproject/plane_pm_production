@@ -114,7 +114,7 @@ export const PeekOverviewIssueProperties = observer(function PeekOverviewIssuePr
         <div className="flex h-8 items-center gap-3">
           <div className="flex w-1/4 flex-shrink-0 items-center gap-1 text-13 text-tertiary">
             <DueDatePropertyIcon className="size-4 flex-shrink-0" />
-            <span>Due date</span>
+            <span>Vendor promised delivery date</span>
           </div>
           <div>
             {issueDetails.target_date ? (

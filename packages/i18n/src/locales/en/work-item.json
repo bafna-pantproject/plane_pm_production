@@ -17,7 +17,7 @@
       },
       "assignee": "Add assignees",
       "start_date": "Add start date",
-      "due_date": "Add due date",
+      "due_date": "Add vendor promised delivery date",
       "parent": "Add parent work item",
       "sub_issue": "Add sub-work item",
       "dependency": "Add dependency",
@@ -316,11 +316,11 @@
       },
       "invalid_issue_start_date": {
         "title": "Unable to update work items",
-        "message": "Start date selected succeeds the due date for some work items. Ensure start date to be before the due date."
+        "message": "Start date selected succeeds the vendor promised delivery date for some work items. Ensure start date to be before the vendor promised delivery date."
       },
       "invalid_issue_target_date": {
         "title": "Unable to update work items",
-        "message": "Due date selected precedes the start date for some work items. Ensure due date to be after the start date."
+        "message": "Vendor promised delivery date selected precedes the start date for some work items. Ensure vendor promised delivery date to be after the start date."
       },
       "invalid_state_transition": {
         "title": "Unable to update work items",
