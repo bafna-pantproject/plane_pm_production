@@ -252,13 +252,15 @@ export const CreateUpdateIssueModalBase = observer(function CreateUpdateIssueMod
         });
       }
 
-      // persist category/quantity (and vendor/requested delivery date, if selected) on the newly created issue's order detail
+      // persist category/quantity (and vendor/requested delivery date, if selected) on the newly created issue's order detail.
+      // vendor and requested_delivery_date are only included when explicitly chosen in this form, so an unset value here
+      // doesn't clobber what a sub-issue's parent may have just trickled down onto it (see trickle_down_order_details_to_new_sub_issue).
       if (response.id && response.project_id) {
         await updateIssueOrderDetail(workspaceSlug.toString(), response.project_id, response.id, {
           category: selectedCategory,
           quantity: selectedQuantity,
           ...(selectedVendorId ? { vendor: selectedVendorId } : {}),
-          requested_delivery_date: selectedRequestedDeliveryDate,
+          ...(selectedRequestedDeliveryDate ? { requested_delivery_date: selectedRequestedDeliveryDate } : {}),
         });
       }
 

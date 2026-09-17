@@ -45,8 +45,9 @@ class TestOrderDetailLifecycle:
 @pytest.mark.unit
 class TestOrderDetailAndTNAPlanTrickleDown:
     """A new sub-issue created directly under a parent (parent set at creation
-    time) seeds its vendor, order number, and TNA plan (per-state targets) from
-    the parent's — a one-time copy at creation, not an ongoing link."""
+    time) seeds its vendor, order number, vendor promised delivery date
+    (target_date), requested delivery date, and TNA plan (per-state targets)
+    from the parent's — a one-time copy at creation, not an ongoing link."""
 
     @pytest.mark.django_db
     def test_new_sub_issue_inherits_vendor_and_order_number_from_parent(self, project, stages, create_user, workspace):
@@ -70,6 +71,72 @@ class TestOrderDetailAndTNAPlanTrickleDown:
         child_order_detail = OrderDetail.objects.get(issue=child)
         assert child_order_detail.vendor_id == vendor.id
         assert child_order_detail.order_number == "PO-100"
+
+    @pytest.mark.django_db
+    def test_new_sub_issue_inherits_requested_delivery_date_from_parent(self, project, stages, create_user):
+        parent = Issue.objects.create(
+            name="Parent order", project=project, workspace=project.workspace, state=stages["cutting"], created_by=create_user
+        )
+        OrderDetail.objects.filter(issue=parent).update(requested_delivery_date="2026-03-01")
+
+        child = Issue.objects.create(
+            name="Child order",
+            project=project,
+            workspace=project.workspace,
+            state=stages["cutting"],
+            parent=parent,
+            created_by=create_user,
+        )
+
+        child_order_detail = OrderDetail.objects.get(issue=child)
+        assert str(child_order_detail.requested_delivery_date) == "2026-03-01"
+
+    @pytest.mark.django_db
+    def test_new_sub_issue_inherits_vendor_promised_delivery_date_from_parent(self, project, stages, create_user):
+        parent = Issue.objects.create(
+            name="Parent order",
+            project=project,
+            workspace=project.workspace,
+            state=stages["cutting"],
+            target_date="2026-04-01",
+            created_by=create_user,
+        )
+
+        child = Issue.objects.create(
+            name="Child order",
+            project=project,
+            workspace=project.workspace,
+            state=stages["cutting"],
+            parent=parent,
+            created_by=create_user,
+        )
+        child.refresh_from_db()
+
+        assert str(child.target_date) == "2026-04-01"
+
+    @pytest.mark.django_db
+    def test_explicit_target_date_at_creation_is_not_overwritten_by_parent(self, project, stages, create_user):
+        parent = Issue.objects.create(
+            name="Parent order",
+            project=project,
+            workspace=project.workspace,
+            state=stages["cutting"],
+            target_date="2026-04-01",
+            created_by=create_user,
+        )
+
+        child = Issue.objects.create(
+            name="Child order",
+            project=project,
+            workspace=project.workspace,
+            state=stages["cutting"],
+            parent=parent,
+            target_date="2026-05-15",
+            created_by=create_user,
+        )
+        child.refresh_from_db()
+
+        assert str(child.target_date) == "2026-05-15"
 
     @pytest.mark.django_db
     def test_new_sub_issue_inherits_tna_plan_target_dates_from_parent(self, project, stages, create_user):

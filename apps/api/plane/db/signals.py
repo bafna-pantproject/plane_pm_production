@@ -30,10 +30,19 @@ def create_order_detail_on_issue_creation(sender, instance, created, **kwargs):
 @receiver(post_save, sender=Issue)
 def trickle_down_order_details_to_new_sub_issue(sender, instance, created, **kwargs):
     """When a new work item is created directly under a parent (parent set at
-    creation time), seed its vendor, order number, and TNA plan (per-state
+    creation time), seed its vendor, order number, vendor promised delivery
+    date (target_date), requested delivery date, and TNA plan (per-state
     target dates) from the parent's. This is a one-time copy at creation only -
     each field is independently editable afterward and is never re-synced from
     the parent again.
+
+    target_date is only trickled down if the child doesn't already have one -
+    the create form sets target_date directly on the same creation call, so an
+    explicit choice made while creating the sub-issue must win over the
+    parent's value. vendor/order_number/requested_delivery_date live on the
+    separate OrderDetail row instead, which is always blank at this point (an
+    explicit choice for those only reaches OrderDetail via a later PATCH after
+    creation), so overwriting them here unconditionally is safe.
 
     Must run before track_task_state_target_entry below: if the child is
     created straight into a state the parent already had a target for, the
@@ -43,6 +52,10 @@ def trickle_down_order_details_to_new_sub_issue(sender, instance, created, **kwa
     if not created or not instance.parent_id:
         return
 
+    parent_issue = Issue.objects.filter(pk=instance.parent_id).only("target_date").first()
+    if parent_issue and parent_issue.target_date and not instance.target_date:
+        Issue.objects.filter(pk=instance.pk).update(target_date=parent_issue.target_date)
+
     parent_order_detail = OrderDetail.objects.filter(issue_id=instance.parent_id).first()
     if parent_order_detail:
         OrderDetail.objects.update_or_create(
@@ -51,6 +64,7 @@ def trickle_down_order_details_to_new_sub_issue(sender, instance, created, **kwa
                 "project_id": instance.project_id,
                 "vendor_id": parent_order_detail.vendor_id,
                 "order_number": parent_order_detail.order_number,
+                "requested_delivery_date": parent_order_detail.requested_delivery_date,
             },
         )
 
