@@ -227,13 +227,15 @@ export const ISSUE_DISPLAY_PROPERTIES: {
 
 export const SPREADSHEET_PROPERTY_LIST: (keyof IIssueDisplayProperties)[] = [
   "state",
+  "order_number",
+  "due_date",
+  "requested_delivery_date",
   "priority",
   "assignee",
   "labels",
   "modules",
   "cycle",
   "start_date",
-  "due_date",
   "estimate",
   "created_on",
   "updated_on",
@@ -242,8 +244,6 @@ export const SPREADSHEET_PROPERTY_LIST: (keyof IIssueDisplayProperties)[] = [
   "sub_issue_count",
   "vendor",
   "category",
-  "requested_delivery_date",
-  "order_number",
 ];
 
 export const SPREADSHEET_PROPERTY_DETAILS: {
