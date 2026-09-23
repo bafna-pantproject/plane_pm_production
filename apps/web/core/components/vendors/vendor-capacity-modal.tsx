@@ -81,7 +81,9 @@ export const VendorCapacityModal = observer(function VendorCapacityModal(props: 
     if (existing) existing.used = entry.used;
     else rowsByKey.set(key, { key, year: entry.year, month: entry.month, capacityEntry: null, used: entry.used });
   });
-  const rows = [...rowsByKey.values()].toSorted((a, b) => a.year - b.year || a.month - b.month);
+  // toSorted() isn't available at this repo's configured TS lib target.
+  // oxlint-disable-next-line no-array-sort
+  const rows = [...rowsByKey.values()].sort((a, b) => a.year - b.year || a.month - b.month);
 
   const handleClose = () => {
     onClose();
