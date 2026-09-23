@@ -86,6 +86,9 @@ from .workspace.sticky import WorkspaceStickyViewSet
 from .state.base import StateViewSet, IntakeStateEndpoint
 from .order import (
     VendorViewSet,
+    VendorCapacityEndpoint,
+    VendorCapacityDetailEndpoint,
+    VendorCapacityUsageEndpoint,
     StyleViewSet,
     PurchaseOrderViewSet,
     IssueStateTargetsEndpoint,

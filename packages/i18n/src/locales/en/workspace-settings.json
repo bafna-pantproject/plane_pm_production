@@ -180,6 +180,19 @@
         "empty_state": {
           "title": "No vendors yet",
           "description": "Add a vendor to start attaching it to work items."
+        },
+        "capacity": {
+          "button": "Capacity",
+          "modal_title": "Monthly capacity — {name}",
+          "description": "Set how many units this vendor can produce in a given month, and see how much of it is already used by work items due that month.",
+          "add_month": "Add month",
+          "month_label": "Month",
+          "capacity_label": "Capacity",
+          "used_label": "Used",
+          "empty_state": "No monthly capacity set yet.",
+          "toasts": {
+            "error": "Something went wrong. Please try again."
+          }
         }
       },
       "api_tokens": {

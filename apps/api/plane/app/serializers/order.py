@@ -4,7 +4,7 @@
 
 # Module imports
 from .base import BaseSerializer
-from plane.db.models import OrderDetail, PurchaseOrder, Style, TaskStateTarget, Vendor
+from plane.db.models import OrderDetail, PurchaseOrder, Style, TaskStateTarget, Vendor, VendorCapacity
 
 
 class VendorSerializer(BaseSerializer):
@@ -22,6 +22,13 @@ class VendorSerializer(BaseSerializer):
             "is_active",
         ]
         read_only_fields = ["workspace"]
+
+
+class VendorCapacitySerializer(BaseSerializer):
+    class Meta:
+        model = VendorCapacity
+        fields = ["id", "workspace_id", "vendor", "year", "month", "capacity"]
+        read_only_fields = ["workspace", "vendor"]
 
 
 class StyleSerializer(BaseSerializer):

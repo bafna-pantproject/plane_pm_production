@@ -16,6 +16,21 @@ export interface TVendor {
   is_active: boolean;
 }
 
+export interface TVendorCapacity {
+  readonly id: string;
+  workspace_id: string;
+  readonly vendor: string;
+  year: number;
+  month: number;
+  capacity: number;
+}
+
+export interface TVendorCapacityUsage {
+  year: number;
+  month: number;
+  used: number;
+}
+
 export interface TStyle {
   readonly id: string;
   workspace_id: string;

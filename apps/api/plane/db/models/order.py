@@ -3,7 +3,7 @@
 # See the LICENSE file for details.
 
 # Django imports
-from django.core.validators import MinValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import Q
 
@@ -36,6 +36,29 @@ class Vendor(WorkspaceBaseModel):
 
     def __str__(self):
         return str(self.name)
+
+
+class VendorCapacity(WorkspaceBaseModel):
+    vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE, related_name="capacities")
+    year = models.PositiveIntegerField()
+    month = models.PositiveSmallIntegerField(validators=[MinValueValidator(1), MaxValueValidator(12)])
+    capacity = models.PositiveIntegerField()
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["vendor", "year", "month"],
+                condition=Q(deleted_at__isnull=True),
+                name="vendor_capacity_unique_vendor_year_month_when_not_deleted",
+            )
+        ]
+        verbose_name = "Vendor Capacity"
+        verbose_name_plural = "Vendor Capacities"
+        db_table = "vendor_capacities"
+        ordering = ("year", "month")
+
+    def __str__(self):
+        return f"Vendor capacity <{self.vendor_id}:{self.year}-{self.month:02d}>"
 
 
 class Style(WorkspaceBaseModel):

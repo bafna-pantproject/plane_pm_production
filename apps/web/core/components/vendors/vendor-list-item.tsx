@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { Pencil, Trash2 } from "lucide-react";
+import { CalendarRange, Pencil, Trash2 } from "lucide-react";
 import { observer } from "mobx-react";
 // plane imports
 import { useTranslation } from "@plane/i18n";
@@ -16,10 +16,11 @@ type Props = {
   isEditable: boolean;
   onEdit: (vendor: TVendor) => void;
   onDelete: (vendor: TVendor) => void;
+  onManageCapacity: (vendor: TVendor) => void;
 };
 
 export const VendorListItem = observer(function VendorListItem(props: Props) {
-  const { vendor, isEditable, onEdit, onDelete } = props;
+  const { vendor, isEditable, onEdit, onDelete, onManageCapacity } = props;
   const { t } = useTranslation();
 
   const contactLine = [vendor.contact_name, vendor.contact_email, vendor.contact_phone].filter(Boolean).join(" · ");
@@ -43,6 +44,17 @@ export const VendorListItem = observer(function VendorListItem(props: Props) {
 
       {isEditable && (
         <div className="flex flex-shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+          <Tooltip tooltipContent={t("workspace_settings.settings.vendors.capacity.button")}>
+            <button
+              type="button"
+              onClick={() => onManageCapacity(vendor)}
+              className={cn(
+                "grid place-items-center rounded-sm p-1.5 text-tertiary hover:bg-layer-1 hover:text-primary"
+              )}
+            >
+              <CalendarRange className="h-3.5 w-3.5" />
+            </button>
+          </Tooltip>
           <Tooltip tooltipContent={t("common.edit")}>
             <button
               type="button"

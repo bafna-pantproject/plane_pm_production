@@ -2,6 +2,10 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # See the LICENSE file for details.
 
+# Django imports
+from django.db.models import Sum
+from django.db.models.functions import ExtractMonth, ExtractYear
+
 # Third party imports
 from rest_framework import status
 from rest_framework.response import Response
@@ -14,9 +18,20 @@ from plane.app.serializers import (
     PurchaseOrderSerializer,
     StyleSerializer,
     TaskStateTargetSerializer,
+    VendorCapacitySerializer,
     VendorSerializer,
 )
-from plane.db.models import Issue, OrderDetail, PurchaseOrder, State, Style, TaskStateTarget, Vendor, Workspace
+from plane.db.models import (
+    Issue,
+    OrderDetail,
+    PurchaseOrder,
+    State,
+    Style,
+    TaskStateTarget,
+    Vendor,
+    VendorCapacity,
+    Workspace,
+)
 
 
 class VendorViewSet(BaseViewSet):
@@ -57,6 +72,79 @@ class VendorViewSet(BaseViewSet):
         vendor = Vendor.objects.get(pk=pk, workspace__slug=slug)
         vendor.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class VendorCapacityEndpoint(BaseAPIView):
+    """Monthly capacity numbers for a vendor, keyed by year and month so a
+    vendor can have a different figure per specific month rather than one
+    fixed value or a repeating calendar-month pattern."""
+
+    @allow_permission([ROLE.ADMIN, ROLE.MEMBER, ROLE.GUEST], level="WORKSPACE")
+    def get(self, request, slug, vendor_id):
+        capacities = VendorCapacity.objects.filter(workspace__slug=slug, vendor_id=vendor_id)
+        return Response(VendorCapacitySerializer(capacities, many=True).data, status=status.HTTP_200_OK)
+
+    @allow_permission([ROLE.ADMIN, ROLE.MEMBER], level="WORKSPACE")
+    def post(self, request, slug, vendor_id):
+        vendor = Vendor.objects.get(pk=vendor_id, workspace__slug=slug)
+        year = request.data.get("year")
+        month = request.data.get("month")
+        if year is None or month is None:
+            return Response({"error": "year and month are required"}, status=status.HTTP_400_BAD_REQUEST)
+        # get_or_create rather than a plain create so re-submitting the same
+        # year/month (e.g. a double click) updates the existing row instead
+        # of tripping the unique constraint.
+        capacity, _ = VendorCapacity.objects.get_or_create(
+            vendor=vendor, year=year, month=month, defaults={"workspace_id": vendor.workspace_id}
+        )
+        serializer = VendorCapacitySerializer(
+            capacity, data={"capacity": request.data.get("capacity")}, partial=True
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class VendorCapacityDetailEndpoint(BaseAPIView):
+    @allow_permission([ROLE.ADMIN, ROLE.MEMBER], level="WORKSPACE")
+    def patch(self, request, slug, vendor_id, pk):
+        capacity = VendorCapacity.objects.get(pk=pk, vendor_id=vendor_id, workspace__slug=slug)
+        serializer = VendorCapacitySerializer(capacity, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @allow_permission([ROLE.ADMIN, ROLE.MEMBER], level="WORKSPACE")
+    def delete(self, request, slug, vendor_id, pk):
+        capacity = VendorCapacity.objects.get(pk=pk, vendor_id=vendor_id, workspace__slug=slug)
+        capacity.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class VendorCapacityUsageEndpoint(BaseAPIView):
+    """Capacity actually used per month for a vendor, computed on the fly from
+    sub-work-items' quantities. Only issues with a parent are counted - a
+    split order's quantity lives on its sub-work-items (which sum to the
+    order's total), so counting the top-level order too would double it."""
+
+    @allow_permission([ROLE.ADMIN, ROLE.MEMBER, ROLE.GUEST], level="WORKSPACE")
+    def get(self, request, slug, vendor_id):
+        usage = (
+            OrderDetail.objects.filter(
+                workspace__slug=slug,
+                vendor_id=vendor_id,
+                quantity__isnull=False,
+                issue__parent_id__isnull=False,
+                issue__target_date__isnull=False,
+            )
+            .annotate(year=ExtractYear("issue__target_date"), month=ExtractMonth("issue__target_date"))
+            .values("year", "month")
+            .annotate(used=Sum("quantity"))
+            .order_by("year", "month")
+        )
+        return Response(list(usage), status=status.HTTP_200_OK)
 
 
 class StyleViewSet(BaseViewSet):

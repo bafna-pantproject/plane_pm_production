@@ -48,6 +48,7 @@ from .project import (
 from .state import StateSerializer, StateLiteSerializer
 from .order import (
     VendorSerializer,
+    VendorCapacitySerializer,
     StyleSerializer,
     PurchaseOrderSerializer,
     OrderDetailSerializer,

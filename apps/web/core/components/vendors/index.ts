@@ -8,3 +8,4 @@ export * from "./vendor-list";
 export * from "./vendor-list-item";
 export * from "./vendor-form-modal";
 export * from "./vendor-delete-modal";
+export * from "./vendor-capacity-modal";

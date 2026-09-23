@@ -13,17 +13,22 @@ from rest_framework.test import APIClient
 
 from plane.db.models import (
     Issue,
+    OrderDetail,
     Project,
     ProjectMember,
     State,
     TaskStateTarget,
     User,
     Vendor,
+    VendorCapacity,
     WorkspaceMember,
 )
 
 VENDORS_URL = "/api/workspaces/{slug}/vendors/"
 VENDOR_URL = "/api/workspaces/{slug}/vendors/{pk}/"
+VENDOR_CAPACITIES_URL = "/api/workspaces/{slug}/vendors/{vendor_id}/capacities/"
+VENDOR_CAPACITY_URL = "/api/workspaces/{slug}/vendors/{vendor_id}/capacities/{pk}/"
+VENDOR_CAPACITY_USAGE_URL = "/api/workspaces/{slug}/vendors/{vendor_id}/capacity-usage/"
 ISSUE_ORDER_DETAIL_URL = "/api/workspaces/{slug}/projects/{project_id}/issues/{issue_id}/order-detail/"
 ISSUE_STATE_TARGET_CASCADE_URL = (
     "/api/workspaces/{slug}/projects/{project_id}/issues/{issue_id}/state-targets/cascade/"
@@ -110,6 +115,205 @@ class TestVendorWorkspaceScoping:
             VENDORS_URL.format(slug=workspace.slug), {"name": "Acme Garments"}, format="json"
         )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+@pytest.mark.contract
+class TestVendorCapacityEndpoint:
+    @pytest.fixture
+    def vendor(self, workspace, create_user):
+        return Vendor.objects.create(workspace=workspace, name="Acme Garments", created_by=create_user)
+
+    @pytest.mark.django_db
+    def test_admin_can_create_a_monthly_capacity(self, session_client, workspace, vendor):
+        url = VENDOR_CAPACITIES_URL.format(slug=workspace.slug, vendor_id=vendor.id)
+        response = session_client.post(url, {"year": 2026, "month": 1, "capacity": 500}, format="json")
+        assert response.status_code == status.HTTP_200_OK, response.data
+        assert VendorCapacity.objects.filter(vendor=vendor, year=2026, month=1, capacity=500).exists()
+
+    @pytest.mark.django_db
+    def test_posting_the_same_year_month_again_updates_it_instead_of_erroring(
+        self, session_client, workspace, vendor
+    ):
+        url = VENDOR_CAPACITIES_URL.format(slug=workspace.slug, vendor_id=vendor.id)
+        session_client.post(url, {"year": 2026, "month": 1, "capacity": 500}, format="json")
+        response = session_client.post(url, {"year": 2026, "month": 1, "capacity": 750}, format="json")
+        assert response.status_code == status.HTTP_200_OK, response.data
+        assert VendorCapacity.objects.filter(vendor=vendor, year=2026, month=1).count() == 1
+        assert VendorCapacity.objects.get(vendor=vendor, year=2026, month=1).capacity == 750
+
+    @pytest.mark.django_db
+    def test_list_returns_only_this_vendors_capacities(self, session_client, workspace, vendor, create_user):
+        other_vendor = Vendor.objects.create(workspace=workspace, name="Other Vendor", created_by=create_user)
+        VendorCapacity.objects.create(workspace=workspace, vendor=vendor, year=2026, month=1, capacity=500)
+        VendorCapacity.objects.create(workspace=workspace, vendor=other_vendor, year=2026, month=1, capacity=999)
+
+        url = VENDOR_CAPACITIES_URL.format(slug=workspace.slug, vendor_id=vendor.id)
+        response = session_client.get(url)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data) == 1
+        assert response.data[0]["capacity"] == 500
+
+    @pytest.mark.django_db
+    def test_admin_can_update_a_capacity(self, session_client, workspace, vendor):
+        capacity = VendorCapacity.objects.create(workspace=workspace, vendor=vendor, year=2026, month=1, capacity=500)
+        url = VENDOR_CAPACITY_URL.format(slug=workspace.slug, vendor_id=vendor.id, pk=capacity.id)
+        response = session_client.patch(url, {"capacity": 650}, format="json")
+        assert response.status_code == status.HTTP_200_OK, response.data
+        capacity.refresh_from_db()
+        assert capacity.capacity == 650
+
+    @pytest.mark.django_db
+    def test_admin_can_delete_a_capacity(self, session_client, workspace, vendor):
+        capacity = VendorCapacity.objects.create(workspace=workspace, vendor=vendor, year=2026, month=1, capacity=500)
+        url = VENDOR_CAPACITY_URL.format(slug=workspace.slug, vendor_id=vendor.id, pk=capacity.id)
+        response = session_client.delete(url)
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+        assert not VendorCapacity.objects.filter(pk=capacity.id).exists()
+
+    @pytest.mark.django_db
+    def test_guest_cannot_create_a_capacity(self, workspace, vendor, guest):
+        client = APIClient()
+        client.force_authenticate(user=guest)
+        url = VENDOR_CAPACITIES_URL.format(slug=workspace.slug, vendor_id=vendor.id)
+        response = client.post(url, {"year": 2026, "month": 1, "capacity": 500}, format="json")
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    @pytest.mark.django_db
+    def test_guest_can_list_capacities(self, workspace, vendor, guest):
+        VendorCapacity.objects.create(workspace=workspace, vendor=vendor, year=2026, month=1, capacity=500)
+        client = APIClient()
+        client.force_authenticate(user=guest)
+        url = VENDOR_CAPACITIES_URL.format(slug=workspace.slug, vendor_id=vendor.id)
+        response = client.get(url)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data) == 1
+
+
+@pytest.mark.contract
+class TestVendorCapacityUsageEndpoint:
+    """Usage is computed from sub-work-items only (issues with a parent) -
+    top-level orders are excluded so a split order's quantity, which lives on
+    its sub-work-items, isn't also counted on the parent."""
+
+    @pytest.fixture
+    def vendor(self, workspace, create_user):
+        return Vendor.objects.create(workspace=workspace, name="Acme Garments", created_by=create_user)
+
+    @pytest.fixture
+    def state(self, project):
+        return State.objects.create(name="Cutting", project=project, workspace=project.workspace, default=True)
+
+    def _make_sub_issue(self, project, state, create_user, parent, target_date, vendor, quantity):
+        child = Issue.objects.create(
+            name="Sub item",
+            project=project,
+            workspace=project.workspace,
+            state=state,
+            parent=parent,
+            target_date=target_date,
+            created_by=create_user,
+        )
+        OrderDetail.objects.filter(issue=child).update(vendor=vendor, quantity=quantity)
+        return child
+
+    @pytest.mark.django_db
+    def test_sums_sub_work_item_quantities_by_delivery_month(
+        self, session_client, workspace, project, state, vendor, create_user
+    ):
+        parent = Issue.objects.create(
+            name="Order 1", project=project, workspace=project.workspace, state=state, created_by=create_user
+        )
+        self._make_sub_issue(project, state, create_user, parent, "2026-01-15", vendor, 100)
+        self._make_sub_issue(project, state, create_user, parent, "2026-01-20", vendor, 150)
+        self._make_sub_issue(project, state, create_user, parent, "2026-02-01", vendor, 50)
+
+        url = VENDOR_CAPACITY_USAGE_URL.format(slug=workspace.slug, vendor_id=vendor.id)
+        response = session_client.get(url)
+        assert response.status_code == status.HTTP_200_OK, response.data
+        usage_by_month = {(row["year"], row["month"]): row["used"] for row in response.data}
+        assert usage_by_month[(2026, 1)] == 250
+        assert usage_by_month[(2026, 2)] == 50
+
+    @pytest.mark.django_db
+    def test_excludes_top_level_orders_even_when_they_have_their_own_quantity(
+        self, session_client, workspace, project, state, vendor
+    ):
+        parent = Issue.objects.create(
+            name="Standalone order",
+            project=project,
+            workspace=project.workspace,
+            state=state,
+            target_date="2026-01-15",
+        )
+        OrderDetail.objects.filter(issue=parent).update(vendor=vendor, quantity=500)
+
+        url = VENDOR_CAPACITY_USAGE_URL.format(slug=workspace.slug, vendor_id=vendor.id)
+        response = session_client.get(url)
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == []
+
+    @pytest.mark.django_db
+    def test_excludes_sub_items_with_no_delivery_date_or_no_quantity(
+        self, session_client, workspace, project, state, vendor, create_user
+    ):
+        parent = Issue.objects.create(
+            name="Order 1", project=project, workspace=project.workspace, state=state, created_by=create_user
+        )
+        # no target_date at all
+        Issue.objects.create(
+            name="Sub item without a due date",
+            project=project,
+            workspace=project.workspace,
+            state=state,
+            parent=parent,
+            created_by=create_user,
+        )
+        # target_date set, but quantity never filled in
+        Issue.objects.create(
+            name="Sub item without a quantity",
+            project=project,
+            workspace=project.workspace,
+            state=state,
+            parent=parent,
+            target_date="2026-01-15",
+            created_by=create_user,
+        )
+
+        url = VENDOR_CAPACITY_USAGE_URL.format(slug=workspace.slug, vendor_id=vendor.id)
+        response = session_client.get(url)
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == []
+
+    @pytest.mark.django_db
+    def test_scoped_to_the_requested_vendor_only(
+        self, session_client, workspace, project, state, create_user, vendor
+    ):
+        other_vendor = Vendor.objects.create(workspace=workspace, name="Other Vendor", created_by=create_user)
+        parent = Issue.objects.create(
+            name="Order 1", project=project, workspace=project.workspace, state=state, created_by=create_user
+        )
+        self._make_sub_issue(project, state, create_user, parent, "2026-01-15", vendor, 100)
+        self._make_sub_issue(project, state, create_user, parent, "2026-01-15", other_vendor, 999)
+
+        url = VENDOR_CAPACITY_USAGE_URL.format(slug=workspace.slug, vendor_id=vendor.id)
+        response = session_client.get(url)
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data) == 1
+        assert response.data[0]["used"] == 100
+
+    @pytest.mark.django_db
+    def test_guest_can_view_capacity_usage(self, workspace, project, state, vendor, guest, create_user):
+        parent = Issue.objects.create(
+            name="Order 1", project=project, workspace=project.workspace, state=state, created_by=create_user
+        )
+        self._make_sub_issue(project, state, create_user, parent, "2026-01-15", vendor, 100)
+
+        client = APIClient()
+        client.force_authenticate(user=guest)
+        url = VENDOR_CAPACITY_USAGE_URL.format(slug=workspace.slug, vendor_id=vendor.id)
+        response = client.get(url)
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data[0]["used"] == 100
 
 
 @pytest.mark.contract

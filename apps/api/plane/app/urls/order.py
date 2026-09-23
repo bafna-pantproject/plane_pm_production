@@ -13,6 +13,9 @@ from plane.app.views import (
     ProjectOrderDetailsEndpoint,
     PurchaseOrderViewSet,
     StyleViewSet,
+    VendorCapacityDetailEndpoint,
+    VendorCapacityEndpoint,
+    VendorCapacityUsageEndpoint,
     VendorViewSet,
 )
 
@@ -26,6 +29,21 @@ urlpatterns = [
         "workspaces/<str:slug>/vendors/<uuid:pk>/",
         VendorViewSet.as_view({"get": "retrieve", "patch": "partial_update", "delete": "destroy"}),
         name="workspace-vendor",
+    ),
+    path(
+        "workspaces/<str:slug>/vendors/<uuid:vendor_id>/capacities/",
+        VendorCapacityEndpoint.as_view(),
+        name="workspace-vendor-capacity",
+    ),
+    path(
+        "workspaces/<str:slug>/vendors/<uuid:vendor_id>/capacities/<uuid:pk>/",
+        VendorCapacityDetailEndpoint.as_view(),
+        name="workspace-vendor-capacity-detail",
+    ),
+    path(
+        "workspaces/<str:slug>/vendors/<uuid:vendor_id>/capacity-usage/",
+        VendorCapacityUsageEndpoint.as_view(),
+        name="workspace-vendor-capacity-usage",
     ),
     path(
         "workspaces/<str:slug>/styles/",

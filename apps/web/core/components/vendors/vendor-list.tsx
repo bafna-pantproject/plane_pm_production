@@ -15,6 +15,7 @@ import { Button, Loader } from "@plane/ui";
 // hooks
 import { useVendor } from "@/hooks/store/use-vendor";
 // components
+import { VendorCapacityModal } from "./vendor-capacity-modal";
 import { VendorDeleteModal } from "./vendor-delete-modal";
 import { VendorFormModal } from "./vendor-form-modal";
 import { VendorListItem } from "./vendor-list-item";
@@ -31,6 +32,7 @@ export const VendorList = observer(function VendorList(props: Props) {
 
   const [vendorToUpdate, setVendorToUpdate] = useState<TVendor | null>(null);
   const [vendorToDelete, setVendorToDelete] = useState<TVendor | null>(null);
+  const [vendorForCapacity, setVendorForCapacity] = useState<TVendor | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
 
   const { isLoading } = useSWR(
@@ -84,6 +86,7 @@ export const VendorList = observer(function VendorList(props: Props) {
               isEditable={isEditable}
               onEdit={openEditForm}
               onDelete={setVendorToDelete}
+              onManageCapacity={setVendorForCapacity}
             />
           ))
         ) : (
@@ -101,6 +104,11 @@ export const VendorList = observer(function VendorList(props: Props) {
 
       <VendorFormModal isOpen={isFormOpen} onClose={() => setIsFormOpen(false)} vendorToUpdate={vendorToUpdate} />
       <VendorDeleteModal isOpen={!!vendorToDelete} onClose={() => setVendorToDelete(null)} vendor={vendorToDelete} />
+      <VendorCapacityModal
+        isOpen={!!vendorForCapacity}
+        onClose={() => setVendorForCapacity(null)}
+        vendor={vendorForCapacity}
+      />
     </div>
   );
 });
