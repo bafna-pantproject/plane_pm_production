@@ -71,6 +71,7 @@ from plane.utils.grouper import (
 )
 from plane.utils.host import base_host
 from plane.utils.issue_filters import issue_filters
+from plane.utils.next_state_target import annotate_next_state_target_fields
 from plane.utils.order_queryset import order_issue_queryset
 from plane.utils.paginator import GroupedOffsetPaginator, SubGroupedOffsetPaginator
 from plane.utils.timezone_converter import user_timezone_converter
@@ -160,6 +161,7 @@ class IssueListEndpoint(BaseAPIView):
             .annotate(order_number=order_detail_subquery("order_number"))
             .distinct()
         )
+        issue_queryset = annotate_next_state_target_fields(issue_queryset, project_id)
 
         order_by_param = request.GET.get("order_by", "-created_at")
         # Issue queryset
@@ -216,6 +218,8 @@ class IssueListEndpoint(BaseAPIView):
                 "requested_delivery_date",
                 "category",
                 "order_number",
+                "next_state_target_date",
+                "next_state_target_entered_at",
             )
             datetime_fields = ["created_at", "updated_at"]
             issues = user_timezone_converter(issues, datetime_fields, request.user.user_timezone)
@@ -281,6 +285,7 @@ class IssueViewSet(BaseViewSet):
             .annotate(category=order_detail_subquery("category"))
             .annotate(order_number=order_detail_subquery("order_number"))
         )
+        issues = annotate_next_state_target_fields(issues, self.kwargs.get("project_id"))
 
         return issues
 

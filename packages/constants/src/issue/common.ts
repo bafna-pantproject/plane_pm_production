@@ -167,6 +167,7 @@ export const ISSUE_DISPLAY_PROPERTIES_KEYS: (keyof IIssueDisplayProperties)[] = 
   "category",
   "requested_delivery_date",
   "order_number",
+  "tna_flag",
 ];
 
 export const SUB_ISSUES_DISPLAY_PROPERTIES_KEYS: (keyof IIssueDisplayProperties)[] = [
@@ -223,6 +224,7 @@ export const ISSUE_DISPLAY_PROPERTIES: {
   { key: "category", titleTranslationKey: "common.category" },
   { key: "requested_delivery_date", titleTranslationKey: "common.requested_delivery_date" },
   { key: "order_number", titleTranslationKey: "common.order_number" },
+  { key: "tna_flag", titleTranslationKey: "common.tna_flag" },
 ];
 
 export const SPREADSHEET_PROPERTY_LIST: (keyof IIssueDisplayProperties)[] = [
@@ -244,6 +246,27 @@ export const SPREADSHEET_PROPERTY_LIST: (keyof IIssueDisplayProperties)[] = [
   "sub_issue_count",
   "vendor",
   "category",
+  "tna_flag",
+];
+
+export type TTnaFlagSeverity = "red" | "orange" | "yellow";
+
+export const TNA_FLAG_SEVERITY_DETAILS: Record<
+  TTnaFlagSeverity,
+  { colorClassName: string; titleTranslationKey: string }
+> = {
+  red: { colorClassName: "text-danger-primary", titleTranslationKey: "common.tna_flag_red" },
+  orange: { colorClassName: "text-orange-500", titleTranslationKey: "common.tna_flag_orange" },
+  yellow: { colorClassName: "text-yellow-500", titleTranslationKey: "common.tna_flag_yellow" },
+};
+
+export const TNA_FLAG_SEVERITIES: {
+  key: TTnaFlagSeverity;
+  title: string;
+}[] = [
+  { key: "red", title: "Red (10+ days past due)" },
+  { key: "orange", title: "Orange (1-9 days past due)" },
+  { key: "yellow", title: "Yellow (due soon)" },
 ];
 
 export const SPREADSHEET_PROPERTY_DETAILS: {
@@ -399,6 +422,14 @@ export const SPREADSHEET_PROPERTY_DETAILS: {
     descendingOrderKey: "-order_number",
     descendingOrderTitle: "Z",
     icon: "Barcode",
+  },
+  tna_flag: {
+    i18n_title: "common.tna_flag",
+    ascendingOrderKey: "-next_state_target_date",
+    ascendingOrderTitle: "New",
+    descendingOrderKey: "next_state_target_date",
+    descendingOrderTitle: "Old",
+    icon: "Flag",
   },
 };
 

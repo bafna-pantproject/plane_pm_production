@@ -22,3 +22,4 @@ export * from "./vendor-column";
 export * from "./category-column";
 export * from "./requested-delivery-date-column";
 export * from "./order-number-column";
+export * from "./tna-flag-column";

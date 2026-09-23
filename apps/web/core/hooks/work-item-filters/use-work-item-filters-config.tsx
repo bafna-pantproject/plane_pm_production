@@ -5,7 +5,7 @@
  */
 
 import { useCallback, useMemo } from "react";
-import { AtSign, Boxes, Briefcase, Building2, CalendarClock } from "lucide-react";
+import { AtSign, Boxes, Briefcase, Building2, CalendarClock, Flag } from "lucide-react";
 // plane imports
 import { Logo } from "@plane/propel/emoji-icon-picker";
 import {
@@ -41,6 +41,7 @@ import {
   getCreatedByFilterConfig,
   getCycleFilterConfig,
   getFileURL,
+  getFlagSeverityFilterConfig,
   getLabelFilterConfig,
   getMentionFilterConfig,
   getModuleFilterConfig,
@@ -142,10 +143,7 @@ export const useWorkItemFiltersConfig = (props: TUseWorkItemFiltersConfigProps):
     [moduleIds, getModuleById]
   );
   const projects = useMemo(
-    () =>
-      projectIds
-        ? (projectIds.map((projectId) => getProjectById(projectId)).filter((project) => project) as IProject[])
-        : [],
+    () => (projectIds ? (projectIds.map((id) => getProjectById(id)).filter((proj) => proj) as IProject[]) : []),
     [projectIds, getProjectById]
   );
   const areAllConfigsInitialized = useMemo(() => isLoaderReady(projectLoader), [projectLoader]);
@@ -395,6 +393,17 @@ export const useWorkItemFiltersConfig = (props: TUseWorkItemFiltersConfigProps):
     [operatorConfigs]
   );
 
+  // flag severity filter config
+  const flagSeverityFilterConfig = useMemo(
+    () =>
+      getFlagSeverityFilterConfig<TWorkItemFilterProperty>("flag_severity")({
+        isEnabled: true,
+        filterIcon: Flag,
+        ...operatorConfigs,
+      }),
+    [operatorConfigs]
+  );
+
   // project filter config
   const projectFilterConfig = useMemo(
     () =>
@@ -402,7 +411,7 @@ export const useWorkItemFiltersConfig = (props: TUseWorkItemFiltersConfigProps):
         isEnabled: isFilterEnabled("project_id") && projects !== undefined,
         filterIcon: Briefcase,
         projects: projects,
-        getOptionIcon: (project) => <Logo logo={project.logo_props} size={12} />,
+        getOptionIcon: (proj) => <Logo logo={proj.logo_props} size={12} />,
         ...operatorConfigs,
       }),
     [isFilterEnabled, projects, operatorConfigs]
@@ -429,6 +438,7 @@ export const useWorkItemFiltersConfig = (props: TUseWorkItemFiltersConfigProps):
       vendorFilterConfig,
       categoryFilterConfig,
       requestedDeliveryDateFilterConfig,
+      flagSeverityFilterConfig,
     ],
     configMap: {
       project_id: projectFilterConfig,
@@ -449,6 +459,7 @@ export const useWorkItemFiltersConfig = (props: TUseWorkItemFiltersConfigProps):
       vendor_id: vendorFilterConfig,
       category: categoryFilterConfig,
       requested_delivery_date: requestedDeliveryDateFilterConfig,
+      flag_severity: flagSeverityFilterConfig,
     },
     isFilterEnabled,
     members: members ?? [],

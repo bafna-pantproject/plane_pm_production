@@ -9,6 +9,7 @@ from django.db.models import Q
 from django_filters import FilterSet, filters
 
 from plane.db.models import Issue
+from plane.utils.next_state_target import get_flagged_issue_ids
 
 
 class UUIDInFilter(filters.BaseInFilter, filters.UUIDFilter):
@@ -210,6 +211,13 @@ class IssueFilterSet(BaseFilterSet):
         field_name="order_detail__requested_delivery_date", lookup_expr="range"
     )
 
+    # Next-stage TNA flag severity (red/orange/yellow) is computed, not a stored
+    # column, so it's resolved via get_flagged_issue_ids rather than a field lookup.
+    # Both single-value and CSV variants are provided, mirroring vendor_id/category,
+    # since the frontend picks whichever shape applies to the current selection.
+    flag_severity = filters.CharFilter(method="filter_flag_severity")
+    flag_severity__in = CharInFilter(method="filter_flag_severity", lookup_expr="in")
+
     class Meta:
         model = Issue
         fields = {
@@ -317,3 +325,22 @@ class IssueFilterSet(BaseFilterSet):
             issue_subscribers__subscriber_id__in=value,
             issue_subscribers__deleted_at__isnull=True,
         )
+
+    def filter_flag_severity(self, queryset, name, value):
+        """Filter by next-stage TNA flag severity ('red'/'orange'/'yellow').
+
+        Severity is computed from TaskStateTarget + the project's state
+        sequence, not stored, so it can't be expressed as a field lookup.
+        `queryset` here is the filterset's already project/workspace-scoped
+        base queryset, from which we derive the distinct project(s) to
+        resolve state ordering for. `value` may be a single string (the
+        exact-match `flag_severity` filter) or a list (the `__in` filter).
+        """
+        severities = set(value) if isinstance(value, (list, tuple, set)) else {value}
+        if not severities:
+            return Q(pk__in=[])
+        project_ids = queryset.values_list("project_id", flat=True).distinct()
+        matching_issue_ids = []
+        for project_id in project_ids:
+            matching_issue_ids.extend(get_flagged_issue_ids(project_id, severities))
+        return Q(pk__in=matching_issue_ids)

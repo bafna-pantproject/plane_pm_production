@@ -72,6 +72,10 @@ export type TBaseIssue = {
   category?: string | null;
   order_number?: string | null;
 
+  // next-stage TNA flag inputs (computed server-side, read-only)
+  next_state_target_date?: string | null;
+  next_state_target_entered_at?: string | null;
+
   created_at: string;
   updated_at: string;
   start_date: string | null;

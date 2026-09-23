@@ -35,6 +35,7 @@ ISSUE_ORDER_BY_ALLOWLIST = frozenset({
     "category",
     "requested_delivery_date",
     "order_number",
+    "next_state_target_date",
 })
 
 # IntakeIssue queryset — fields are prefixed with `issue__` for the join.

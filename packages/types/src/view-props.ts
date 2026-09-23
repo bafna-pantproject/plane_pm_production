@@ -65,7 +65,9 @@ export type TIssueOrderByOptions =
   | "requested_delivery_date"
   | "-requested_delivery_date"
   | "order_number"
-  | "-order_number";
+  | "-order_number"
+  | "next_state_target_date"
+  | "-next_state_target_date";
 
 export type TIssueGroupingFilters = "active" | "backlog";
 
@@ -126,6 +128,7 @@ export const WORK_ITEM_FILTER_PROPERTY_KEYS = [
   "vendor_id",
   "category",
   "requested_delivery_date",
+  "flag_severity",
 ] as const;
 export type TWorkItemFilterProperty = (typeof WORK_ITEM_FILTER_PROPERTY_KEYS)[number];
 
@@ -196,6 +199,7 @@ export interface IIssueDisplayProperties {
   category?: boolean;
   requested_delivery_date?: boolean;
   order_number?: boolean;
+  tna_flag?: boolean;
 }
 
 export type TIssueKanbanFilters = {

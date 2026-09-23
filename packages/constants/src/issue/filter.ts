@@ -222,6 +222,7 @@ export const ISSUE_DISPLAY_FILTERS_BY_PAGE: TIssueFiltersToDisplayByPageType = {
       "vendor_id",
       "category",
       "requested_delivery_date",
+      "flag_severity",
     ],
     layoutOptions: {
       list: {

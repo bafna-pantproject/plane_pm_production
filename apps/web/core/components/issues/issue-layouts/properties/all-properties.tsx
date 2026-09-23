@@ -20,6 +20,7 @@ import type { TIssue, IIssueDisplayProperties, TIssuePriorities } from "@plane/t
 import {
   cn,
   getDate,
+  getTnaFlagSeverity,
   renderFormattedPayloadDate,
   generateWorkItemLink,
   shouldHighlightIssueDueDate,
@@ -49,6 +50,7 @@ import { useIssueStoreType } from "@/hooks/use-issue-layout-store";
 import { usePlatformOS } from "@/hooks/use-platform-os";
 // local components
 import { IssuePropertyLabels } from "./labels";
+import { TnaFlagIndicator } from "./tna-flag-indicator";
 import { WithDisplayPropertiesHOC } from "./with-display-properties-HOC";
 
 export interface IIssueProperties {
@@ -608,6 +610,17 @@ export const IssueProperties = observer(function IssueProperties(props: IIssuePr
             labelClassName="text-caption-sm-regular"
           />
         </div>
+      </WithDisplayPropertiesHOC>
+
+      {/* next-stage TNA flag - read-only computed indicator */}
+      <WithDisplayPropertiesHOC
+        displayProperties={displayProperties}
+        displayPropertyKey="tna_flag"
+        shouldRenderProperty={() =>
+          !!getTnaFlagSeverity(issue.next_state_target_date, issue.next_state_target_entered_at)
+        }
+      >
+        <TnaFlagIndicator issue={issue} />
       </WithDisplayPropertiesHOC>
 
       <ReasonConfirmationModal

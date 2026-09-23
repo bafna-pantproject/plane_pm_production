@@ -177,6 +177,16 @@ const ISSUE_ORDERBY_KEY: Record<TIssueOrderByOptions, keyof TIssue> = {
   "-attachment_count": "attachment_count",
   sub_issues_count: "sub_issues_count",
   "-sub_issues_count": "sub_issues_count",
+  vendor_id: "vendor_id",
+  "-vendor_id": "vendor_id",
+  category: "category",
+  "-category": "category",
+  requested_delivery_date: "requested_delivery_date",
+  "-requested_delivery_date": "requested_delivery_date",
+  order_number: "order_number",
+  "-order_number": "order_number",
+  next_state_target_date: "next_state_target_date",
+  "-next_state_target_date": "next_state_target_date",
 };
 
 export abstract class BaseIssuesStore implements IBaseIssuesStore {

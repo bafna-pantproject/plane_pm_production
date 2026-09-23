@@ -5,14 +5,15 @@
  */
 
 import { useEffect, useState } from "react";
-import { ArrowDownToLine, CalendarCheck2 } from "lucide-react";
+import { ArrowDownToLine, CalendarCheck2, Flag } from "lucide-react";
 import { observer } from "mobx-react";
 // i18n
 import { useTranslation } from "@plane/i18n";
 import { TOAST_TYPE, setToast } from "@plane/propel/toast";
 import { Tooltip } from "@plane/propel/tooltip";
 // utils
-import { renderFormattedDate, renderFormattedPayloadDate } from "@plane/utils";
+import { getTnaFlagSeverity, renderFormattedDate, renderFormattedPayloadDate } from "@plane/utils";
+import { TNA_FLAG_SEVERITY_DETAILS } from "@plane/constants";
 // components
 import { DateDropdown } from "@/components/dropdowns/date";
 import { SidebarPropertyListItem } from "@/components/common/layout/sidebar/property-list-item";
@@ -55,12 +56,18 @@ export const IssueTNAPlan = observer(function IssueTNAPlan(props: Props) {
   const { getProjectStates } = useProjectState();
   const { getIssueStateTargets, fetchIssueStateTargets, setIssueStateTarget, cascadeStateTargetsToSubIssues } =
     useTaskStateTarget();
-  const { comment } = useIssueDetail();
+  const {
+    comment,
+    issue: { getIssueById },
+  } = useIssueDetail();
   // derived values
   const stateTargets = getIssueStateTargets(issueId);
   const projectStates = getProjectStates(projectId);
   const hasTargetDates = !!stateTargets?.some((target) => !!target.target_date);
   const canCascade = !disabled && subIssuesCount > 0 && hasTargetDates;
+  const currentStateId = getIssueById(issueId)?.state_id;
+  const currentStateIndex = projectStates?.findIndex((state) => state.id === currentStateId) ?? -1;
+  const nextState = currentStateIndex >= 0 ? projectStates?.[currentStateIndex + 1] : undefined;
 
   useEffect(() => {
     if (!stateTargets) fetchIssueStateTargets(workspaceSlug, projectId, issueId);
@@ -126,8 +133,23 @@ export const IssueTNAPlan = observer(function IssueTNAPlan(props: Props) {
       <div className={`mt-3 w-full space-y-3 ${disabled ? "opacity-60" : ""}`}>
         {(projectStates ?? []).map((state) => {
           const stateTarget = stateTargets?.find((target) => target.state === state.id);
+          const flagSeverity =
+            state.id === nextState?.id ? getTnaFlagSeverity(stateTarget?.target_date, stateTarget?.entered_at) : null;
           return (
             <SidebarPropertyListItem key={state.id} icon={CalendarCheck2} label={state.name}>
+              {flagSeverity && (
+                <Tooltip
+                  tooltipContent={t(TNA_FLAG_SEVERITY_DETAILS[flagSeverity].titleTranslationKey, {
+                    days: stateTarget?.target_date ? renderFormattedDate(stateTarget.target_date) : "",
+                  })}
+                >
+                  <Flag
+                    className={`h-3 w-3 shrink-0 ${TNA_FLAG_SEVERITY_DETAILS[flagSeverity].colorClassName}`}
+                    strokeWidth={2}
+                    fill="currentColor"
+                  />
+                </Tooltip>
+              )}
               <DateDropdown
                 placeholder={t("common.target_date")}
                 value={stateTarget?.target_date ?? null}
@@ -137,7 +159,7 @@ export const IssueTNAPlan = observer(function IssueTNAPlan(props: Props) {
                     projectId,
                     issueId,
                     state.id,
-                    val ? renderFormattedPayloadDate(val) : null
+                    val ? (renderFormattedPayloadDate(val) ?? null) : null
                   )
                 }
                 disabled={disabled}

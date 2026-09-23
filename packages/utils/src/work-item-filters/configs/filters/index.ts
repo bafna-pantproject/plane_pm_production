@@ -7,6 +7,7 @@
 export * from "./category";
 export * from "./cycle";
 export * from "./date";
+export * from "./flag-severity";
 export * from "./label";
 export * from "./module";
 export * from "./priority";

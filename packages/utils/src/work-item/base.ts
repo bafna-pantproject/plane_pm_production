@@ -314,6 +314,7 @@ export const getComputedDisplayProperties = (
   category: displayProperties?.category ?? true,
   requested_delivery_date: displayProperties?.requested_delivery_date ?? true,
   order_number: displayProperties?.order_number ?? true,
+  tna_flag: displayProperties?.tna_flag ?? true,
 });
 
 export const generateWorkItemLink = ({

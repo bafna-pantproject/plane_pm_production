@@ -136,6 +136,8 @@ def issue_on_results(
         "requested_delivery_date",
         "category",
         "order_number",
+        "next_state_target_date",
+        "next_state_target_entered_at",
     ]
 
     if group_by in FIELD_MAPPER:
