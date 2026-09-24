@@ -87,23 +87,22 @@ class VendorCapacityEndpoint(BaseAPIView):
     @allow_permission([ROLE.ADMIN, ROLE.MEMBER], level="WORKSPACE")
     def post(self, request, slug, vendor_id):
         vendor = Vendor.objects.get(pk=vendor_id, workspace__slug=slug)
-        year = request.data.get("year")
-        month = request.data.get("month")
-        if year is None or month is None:
-            return Response({"error": "year and month are required"}, status=status.HTTP_400_BAD_REQUEST)
-        # get_or_create rather than a plain create so re-submitting the same
+        # Validate year/month/capacity up front: capacity is NOT NULL, so the
+        # row can't be created first and filled in afterwards.
+        serializer = VendorCapacitySerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        data = serializer.validated_data
+        # update_or_create rather than a plain create so re-submitting the same
         # year/month (e.g. a double click) updates the existing row instead
         # of tripping the unique constraint.
-        capacity, _ = VendorCapacity.objects.get_or_create(
-            vendor=vendor, year=year, month=month, defaults={"workspace_id": vendor.workspace_id}
+        capacity, _ = VendorCapacity.objects.update_or_create(
+            vendor=vendor,
+            year=data["year"],
+            month=data["month"],
+            defaults={"capacity": data["capacity"], "workspace_id": vendor.workspace_id},
         )
-        serializer = VendorCapacitySerializer(
-            capacity, data={"capacity": request.data.get("capacity")}, partial=True
-        )
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(VendorCapacitySerializer(capacity).data, status=status.HTTP_200_OK)
 
 
 class VendorCapacityDetailEndpoint(BaseAPIView):
