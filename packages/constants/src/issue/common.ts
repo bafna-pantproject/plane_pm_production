@@ -239,14 +239,14 @@ export const SPREADSHEET_PROPERTY_LIST: (keyof IIssueDisplayProperties)[] = [
   "cycle",
   "start_date",
   "estimate",
-  "created_on",
-  "updated_on",
   "link",
   "attachment_count",
   "sub_issue_count",
   "vendor",
   "category",
   "tna_flag",
+  "created_on",
+  "updated_on",
 ];
 
 export type TTnaFlagSeverity = "red" | "orange" | "yellow";
