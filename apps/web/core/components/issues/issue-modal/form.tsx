@@ -41,6 +41,7 @@ import {
 // hooks
 import { useIssueModal } from "@/hooks/context/use-issue-modal";
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
+import { useOrderDetail } from "@/hooks/store/use-order-detail";
 import { useProject } from "@/hooks/store/use-project";
 import { useProjectState } from "@/hooks/store/use-project-state";
 import { useVendor } from "@/hooks/store/use-vendor";
@@ -151,6 +152,7 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
   const { fetchCycles } = useProjectIssueProperties();
   const { getStateById } = useProjectState();
   const { getVendorById } = useVendor();
+  const { fetchIssueOrderDetail } = useOrderDetail();
 
   // form info
   const methods = useForm<TIssue>({
@@ -372,6 +374,29 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
     );
     // oxlint-disable-next-line eslint-plugin-react-hooks/exhaustive-deps
   }, [watch, getIssueById, getProjectById, selectedParentIssue, getStateById]);
+
+  // when creating a sub work item, prefill vendor, requested delivery date and vendor promised
+  // delivery date (target_date) from the parent so users don't have to re-enter them. Only fills
+  // fields that are still empty, so anything the user already chose is never overwritten.
+  const parentIdForPrefill = watch("parent_id") || undefined;
+  useEffect(() => {
+    if (data?.id || !parentIdForPrefill || !workspaceSlug || !projectId) return;
+    let cancelled = false;
+    const parentIssue = getIssueById(parentIdForPrefill);
+    if (parentIssue?.target_date && !getValues("target_date")) setValue("target_date", parentIssue.target_date);
+    fetchIssueOrderDetail(workspaceSlug.toString(), parentIssue?.project_id ?? projectId, parentIdForPrefill)
+      .then((parentOrderDetail) => {
+        if (cancelled || !parentOrderDetail) return;
+        if (parentOrderDetail.vendor && !selectedVendorId) onVendorChange?.(parentOrderDetail.vendor);
+        if (parentOrderDetail.requested_delivery_date && !selectedRequestedDeliveryDate)
+          onRequestedDeliveryDateChange?.(parentOrderDetail.requested_delivery_date);
+      })
+      .catch((error) => console.error(error));
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [parentIdForPrefill, projectId]);
 
   // executing this useEffect when isDirty changes
   useEffect(() => {

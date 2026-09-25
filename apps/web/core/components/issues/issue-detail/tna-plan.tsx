@@ -86,8 +86,19 @@ export const IssueTNAPlan = observer(function IssueTNAPlan(props: Props) {
     setIsCascading(true);
     try {
       const updatedIssueIds = await cascadeStateTargetsToSubIssues(workspaceSlug, projectId, issueId);
+      const pushedDates = (projectStates ?? [])
+        .map((state) => {
+          const target = stateTargets?.find((item) => item.state === state.id);
+          return target?.target_date
+            ? `<li>${escapeHtml(state.name)}: ${renderFormattedDate(target.target_date)}</li>`
+            : null;
+        })
+        .filter(Boolean)
+        .join("");
       await comment.createComment(workspaceSlug, projectId, issueId, {
-        comment_html: `<p>TNA Plan Changed: ${escapeHtml(reason)}</p>`,
+        comment_html: `<p>TNA Plan Changed: ${escapeHtml(reason)}</p>${
+          pushedDates ? `<p>Dates trickled down to sub work items:</p><ul>${pushedDates}</ul>` : ""
+        }`,
       });
       setToast({
         type: TOAST_TYPE.SUCCESS,
@@ -103,6 +114,30 @@ export const IssueTNAPlan = observer(function IssueTNAPlan(props: Props) {
       });
     } finally {
       setIsCascading(false);
+    }
+  };
+
+  const handleStateTargetChange = async (
+    stateId: string,
+    stateName: string,
+    previousDate: string | null | undefined,
+    val: Date | null
+  ) => {
+    const newDate = val ? (renderFormattedPayloadDate(val) ?? null) : null;
+    if ((previousDate ?? null) === newDate) return;
+    try {
+      await setIssueStateTarget(workspaceSlug, projectId, issueId, stateId, newDate);
+      const from = previousDate ? renderFormattedDate(previousDate) : "not set";
+      const to = newDate ? renderFormattedDate(newDate) : "not set";
+      await comment.createComment(workspaceSlug, projectId, issueId, {
+        comment_html: `<p>TNA Plan Changed: ${escapeHtml(stateName)} target date ${from} → ${to}</p>`,
+      });
+    } catch (error: any) {
+      setToast({
+        type: TOAST_TYPE.ERROR,
+        title: t("toast.error"),
+        message: error?.detail ?? error?.error ?? "Something went wrong",
+      });
     }
   };
 
@@ -153,15 +188,7 @@ export const IssueTNAPlan = observer(function IssueTNAPlan(props: Props) {
               <DateDropdown
                 placeholder={t("common.target_date")}
                 value={stateTarget?.target_date ?? null}
-                onChange={(val) =>
-                  setIssueStateTarget(
-                    workspaceSlug,
-                    projectId,
-                    issueId,
-                    state.id,
-                    val ? (renderFormattedPayloadDate(val) ?? null) : null
-                  )
-                }
+                onChange={(val) => handleStateTargetChange(state.id, state.name, stateTarget?.target_date, val)}
                 disabled={disabled}
                 buttonVariant="transparent-with-text"
                 className="group w-full grow"
