@@ -162,6 +162,7 @@
           "contact_name": "Contact name",
           "contact_email": "Contact email",
           "contact_phone": "Contact phone",
+          "increff_supplier_id": "Increff supplier ID",
           "address": "Address",
           "is_active": "Active"
         },

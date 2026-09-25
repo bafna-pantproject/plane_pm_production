@@ -52,9 +52,10 @@ class VendorViewSet(BaseViewSet):
 
     @allow_permission([ROLE.ADMIN, ROLE.MEMBER], level="WORKSPACE")
     def create(self, request, slug):
-        serializer = VendorSerializer(data=request.data)
+        workspace_id = Workspace.objects.only("id").get(slug=slug).id
+        serializer = VendorSerializer(data=request.data, context={"workspace_id": workspace_id})
         if serializer.is_valid():
-            serializer.save(workspace_id=Workspace.objects.only("id").get(slug=slug).id)
+            serializer.save(workspace_id=workspace_id)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

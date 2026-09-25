@@ -18,6 +18,7 @@ class Vendor(WorkspaceBaseModel):
     contact_name = models.CharField(max_length=255, blank=True)
     contact_email = models.CharField(max_length=255, blank=True)
     contact_phone = models.CharField(max_length=50, blank=True)
+    increff_supplier_id = models.CharField(max_length=255, blank=True)
     address = models.TextField(blank=True)
     is_active = models.BooleanField(default=True)
 
@@ -27,7 +28,12 @@ class Vendor(WorkspaceBaseModel):
                 fields=["workspace", "name"],
                 condition=Q(deleted_at__isnull=True),
                 name="vendor_unique_workspace_name_when_not_deleted",
-            )
+            ),
+            models.UniqueConstraint(
+                fields=["workspace", "increff_supplier_id"],
+                condition=Q(deleted_at__isnull=True) & ~Q(increff_supplier_id=""),
+                name="vendor_unique_workspace_increff_supplier_id_when_not_deleted",
+            ),
         ]
         verbose_name = "Vendor"
         verbose_name_plural = "Vendors"

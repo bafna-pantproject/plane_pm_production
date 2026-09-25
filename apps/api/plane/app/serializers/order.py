@@ -2,6 +2,9 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # See the LICENSE file for details.
 
+# Third party imports
+from rest_framework import serializers
+
 # Module imports
 from .base import BaseSerializer
 from plane.db.models import OrderDetail, PurchaseOrder, Style, TaskStateTarget, Vendor, VendorCapacity
@@ -18,10 +21,23 @@ class VendorSerializer(BaseSerializer):
             "contact_name",
             "contact_email",
             "contact_phone",
+            "increff_supplier_id",
             "address",
             "is_active",
         ]
         read_only_fields = ["workspace"]
+
+    def validate_increff_supplier_id(self, value):
+        value = value.strip()
+        if not value:
+            return value
+        workspace_id = self.instance.workspace_id if self.instance else self.context.get("workspace_id")
+        duplicates = Vendor.objects.filter(workspace_id=workspace_id, increff_supplier_id=value)
+        if self.instance:
+            duplicates = duplicates.exclude(pk=self.instance.pk)
+        if duplicates.exists():
+            raise serializers.ValidationError("A vendor with this Increff supplier ID already exists.")
+        return value
 
 
 class VendorCapacitySerializer(BaseSerializer):

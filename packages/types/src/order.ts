@@ -12,6 +12,7 @@ export interface TVendor {
   contact_name: string;
   contact_email: string;
   contact_phone: string;
+  increff_supplier_id: string;
   address: string;
   is_active: boolean;
 }

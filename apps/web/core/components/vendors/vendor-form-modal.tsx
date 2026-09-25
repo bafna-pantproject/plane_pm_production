@@ -27,6 +27,7 @@ type TFormState = {
   contact_name: string;
   contact_email: string;
   contact_phone: string;
+  increff_supplier_id: string;
   address: string;
   is_active: boolean;
 };
@@ -37,6 +38,7 @@ const EMPTY_FORM: TFormState = {
   contact_name: "",
   contact_email: "",
   contact_phone: "",
+  increff_supplier_id: "",
   address: "",
   is_active: true,
 };
@@ -62,6 +64,7 @@ export const VendorFormModal = observer(function VendorFormModal(props: Props) {
               contact_name: vendorToUpdate.contact_name,
               contact_email: vendorToUpdate.contact_email,
               contact_phone: vendorToUpdate.contact_phone,
+              increff_supplier_id: vendorToUpdate.increff_supplier_id ?? "",
               address: vendorToUpdate.address,
               is_active: vendorToUpdate.is_active,
             }
@@ -93,7 +96,11 @@ export const VendorFormModal = observer(function VendorFormModal(props: Props) {
       setToast({
         type: TOAST_TYPE.ERROR,
         title: t("toast.error"),
-        message: error?.name?.[0] ?? error?.detail ?? t("workspace_settings.settings.vendors.toasts.error"),
+        message:
+          error?.name?.[0] ??
+          error?.increff_supplier_id?.[0] ??
+          error?.detail ??
+          t("workspace_settings.settings.vendors.toasts.error"),
       });
     } finally {
       setIsSubmitting(false);
@@ -171,6 +178,19 @@ export const VendorFormModal = observer(function VendorFormModal(props: Props) {
               value={formData.contact_phone}
               onChange={(event) => setFormData((prev) => ({ ...prev, contact_phone: event.target.value }))}
               placeholder={t("workspace_settings.settings.vendors.fields.contact_phone")}
+              className="w-full"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label className="text-body-xs-medium text-tertiary">
+              {t("workspace_settings.settings.vendors.fields.increff_supplier_id")}
+            </label>
+            <Input
+              type="text"
+              value={formData.increff_supplier_id}
+              onChange={(event) => setFormData((prev) => ({ ...prev, increff_supplier_id: event.target.value }))}
+              placeholder={t("workspace_settings.settings.vendors.fields.increff_supplier_id")}
               className="w-full"
             />
           </div>
