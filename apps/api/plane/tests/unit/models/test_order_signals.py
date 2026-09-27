@@ -165,7 +165,8 @@ class TestOrderDetailAndTNAPlanTrickleDown:
         parent = Issue.objects.create(
             name="Parent order", project=project, workspace=project.workspace, state=stages["cutting"], created_by=create_user
         )
-        TaskStateTarget.objects.create(issue=parent, state=stages["cutting"], project=project, target_date="2026-01-15")
+        # parent already has an auto-created row for "cutting" (its own entry) - just add a target_date to it
+        TaskStateTarget.objects.filter(issue=parent, state=stages["cutting"]).update(target_date="2026-01-15")
 
         # child is created straight into "cutting" - the same state the parent has a target for
         child = Issue.objects.create(
@@ -234,18 +235,37 @@ class TestOrderDetailAndTNAPlanTrickleDown:
         order_detail = OrderDetail.objects.get(issue=issue)
         assert order_detail.vendor_id is None
         assert order_detail.order_number == ""
-        assert not TaskStateTarget.objects.filter(issue=issue).exists()
+        # its own creation-state entry is auto-tracked, but nothing was trickled in
+        target = TaskStateTarget.objects.get(issue=issue, state=stages["cutting"])
+        assert target.target_date is None
+        assert target.entered_at is not None
 
 
 @pytest.mark.unit
 class TestTaskStateTargetLifecycle:
     @pytest.mark.django_db
-    def test_setting_a_target_for_the_current_state_does_not_backfill_entered_at(self, project, stages, create_user):
+    def test_creating_an_issue_records_entered_at_for_its_initial_state(self, project, stages, create_user):
         issue = Issue.objects.create(
             name="Order 1", project=project, workspace=project.workspace, state=stages["cutting"], created_by=create_user
         )
-        target = TaskStateTarget.objects.create(issue=issue, state=stages["cutting"], project=project)
-        assert target.entered_at is None
+        target = TaskStateTarget.objects.get(issue=issue, state=stages["cutting"])
+        assert target.target_date is None
+        assert target.entered_at is not None
+
+    @pytest.mark.django_db
+    def test_setting_a_target_for_the_current_state_does_not_touch_entered_at(self, project, stages, create_user):
+        issue = Issue.objects.create(
+            name="Order 1", project=project, workspace=project.workspace, state=stages["cutting"], created_by=create_user
+        )
+        target = TaskStateTarget.objects.get(issue=issue, state=stages["cutting"])
+        original_entered_at = target.entered_at
+        assert original_entered_at is not None
+
+        target.target_date = "2026-01-15"
+        target.save()
+
+        target.refresh_from_db()
+        assert target.entered_at == original_entered_at
 
     @pytest.mark.django_db
     def test_transitioning_into_a_targeted_state_sets_entered_at(self, project, stages, create_user):
@@ -262,21 +282,23 @@ class TestTaskStateTargetLifecycle:
         assert target.entered_at is not None
 
     @pytest.mark.django_db
-    def test_transitioning_into_a_state_with_no_target_creates_no_row(self, project, stages, create_user):
+    def test_transitioning_into_a_state_with_no_target_records_entered_at_anyway(self, project, stages, create_user):
         issue = Issue.objects.create(
             name="Order 1", project=project, workspace=project.workspace, state=stages["cutting"], created_by=create_user
         )
         issue.state = stages["stitching"]
         issue.save()
 
-        assert not TaskStateTarget.objects.filter(issue=issue, state=stages["stitching"]).exists()
+        target = TaskStateTarget.objects.get(issue=issue, state=stages["stitching"])
+        assert target.target_date is None
+        assert target.entered_at is not None
 
     @pytest.mark.django_db
     def test_reentering_a_targeted_state_overwrites_entered_at(self, project, stages, create_user):
         issue = Issue.objects.create(
             name="Order 1", project=project, workspace=project.workspace, state=stages["cutting"], created_by=create_user
         )
-        target = TaskStateTarget.objects.create(issue=issue, state=stages["cutting"], project=project)
+        target = TaskStateTarget.objects.get(issue=issue, state=stages["cutting"])
 
         issue.state = stages["stitching"]
         issue.save()
@@ -301,7 +323,7 @@ class TestTaskStateTargetLifecycle:
         issue = Issue.objects.create(
             name="Order 1", project=project, workspace=project.workspace, state=stages["stitching"], created_by=create_user
         )
-        target = TaskStateTarget.objects.create(issue=issue, state=stages["stitching"], project=project)
+        target = TaskStateTarget.objects.get(issue=issue, state=stages["stitching"])
         issue.state = stages["cutting"]
         issue.save()
         issue.state = stages["stitching"]

@@ -79,10 +79,15 @@ def trickle_down_order_details_to_new_sub_issue(sender, instance, created, **kwa
 
 @receiver(post_save, sender=Issue)
 def track_task_state_target_entry(sender, instance, created, **kwargs):
-    """Backfill entered_at on a TaskStateTarget row when the issue transitions
-    into a state a target was already set for. Sparse: never creates a row -
-    only updates one that a user already set a target_date on."""
+    """Stamp entered_at on the TaskStateTarget row for the state an issue just
+    transitioned into (including its initial state on creation), creating the
+    row if one doesn't already exist so every state entry is recorded as the
+    "actual start date" - not only states a target_date was already set on."""
     previous_state_id = getattr(instance, "_previous_state_id", None)
     if previous_state_id == instance.state_id or not instance.state_id:
         return
-    TaskStateTarget.objects.filter(issue=instance, state_id=instance.state_id).update(entered_at=timezone.now())
+    TaskStateTarget.objects.update_or_create(
+        issue=instance,
+        state_id=instance.state_id,
+        defaults={"project_id": instance.project_id, "entered_at": timezone.now()},
+    )
