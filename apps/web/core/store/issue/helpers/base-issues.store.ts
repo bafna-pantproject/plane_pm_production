@@ -594,6 +594,12 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
       // call API to update the issue
       await this.issueService.patchIssue(workspaceSlug, projectId, issueId, data);
 
+      // entered_at is stamped server-side on the transition, so the cached TNA plan is stale now
+      const { taskStateTarget } = this.rootIssueStore.rootStore;
+      if (data.state_id !== undefined && taskStateTarget.fetchedMap[issueId]) {
+        void taskStateTarget.fetchIssueStateTargets(workspaceSlug, projectId, issueId);
+      }
+
       // call fetch Parent Stats
       this.fetchParentStats(workspaceSlug, projectId);
     } catch (error) {
