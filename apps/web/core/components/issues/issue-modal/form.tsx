@@ -464,6 +464,7 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
                   handleFormChange={handleFormChange}
                   categoryError={categoryError}
                   quantityError={quantityError}
+                  isCategoryDisabled={Boolean(data?.id)}
                   workspaceSlug={workspaceSlug?.toString()}
                   selectedVendorId={selectedVendorId}
                   onVendorChange={onVendorChange}

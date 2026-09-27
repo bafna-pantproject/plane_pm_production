@@ -28,6 +28,8 @@ type TIssueCategoryQuantityInputProps = {
   categoryInputRef: React.MutableRefObject<HTMLInputElement | null>;
   categoryError?: string;
   quantityError?: string;
+  // category is fixed once a work item exists; vendor and quantity stay editable
+  isCategoryDisabled?: boolean;
   workspaceSlug: string;
   selectedVendorId?: string | null;
   onVendorChange?: (vendorId: string | null) => void;
@@ -45,6 +47,7 @@ export const IssueCategoryQuantityInput = observer(function IssueCategoryQuantit
     categoryInputRef,
     categoryError,
     quantityError,
+    isCategoryDisabled = false,
     workspaceSlug,
     selectedVendorId = null,
     onVendorChange,
@@ -72,7 +75,9 @@ export const IssueCategoryQuantityInput = observer(function IssueCategoryQuantit
           hasError={Boolean(categoryError)}
           placeholder={t("common.category")}
           className="w-full text-body-sm-regular"
-          autoFocus
+          // oxlint-disable-next-line jsx_a11y/no-autofocus
+          autoFocus={!isCategoryDisabled}
+          disabled={isCategoryDisabled}
           tabIndex={getIndex("category")}
         />
         <span className="text-caption-sm-medium text-danger-primary">{categoryError}</span>
@@ -88,7 +93,7 @@ export const IssueCategoryQuantityInput = observer(function IssueCategoryQuantit
             options={(workspaceVendors ?? []).map((vendor) => ({ id: vendor.id, label: vendor.name }))}
             placeholder={t("common.vendor")}
             onCreate={(name) => createVendor(workspaceSlug, { name })}
-            className="w-full border border-strong rounded-sm"
+            className="w-full rounded-sm border border-strong"
           />
         </div>
       )}
