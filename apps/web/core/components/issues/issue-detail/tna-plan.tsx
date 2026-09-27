@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowDownToLine, CalendarCheck2, Flag } from "lucide-react";
 import { observer } from "mobx-react";
 // i18n
@@ -68,11 +68,23 @@ export const IssueTNAPlan = observer(function IssueTNAPlan(props: Props) {
   const currentStateId = getIssueById(issueId)?.state_id;
   const currentStateIndex = projectStates?.findIndex((state) => state.id === currentStateId) ?? -1;
   const nextState = currentStateIndex >= 0 ? projectStates?.[currentStateIndex + 1] : undefined;
+  const previousStateIdRef = useRef(currentStateId);
 
   useEffect(() => {
     if (!stateTargets) fetchIssueStateTargets(workspaceSlug, projectId, issueId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workspaceSlug, projectId, issueId]);
+
+  useEffect(() => {
+    // the work item just transitioned into (or out of) a state: the backend
+    // stamps entered_at on that transition, so refetch to pick it up instead
+    // of showing the stale cached targets for the rest of this session.
+    if (previousStateIdRef.current !== currentStateId) {
+      fetchIssueStateTargets(workspaceSlug, projectId, issueId);
+    }
+    previousStateIdRef.current = currentStateId;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentStateId]);
 
   const cascadeDisabledReason = disabled
     ? undefined
