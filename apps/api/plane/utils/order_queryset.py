@@ -3,6 +3,7 @@
 # See the LICENSE file for details.
 
 from django.db.models import Case, CharField, Min, Value, When
+from django.db.models.functions import Lower
 
 # Custom ordering for priority and state
 PRIORITY_ORDER = ["urgent", "high", "medium", "low", "none"]
@@ -188,6 +189,12 @@ def order_issue_queryset(issue_queryset, order_by_param="-created_at"):
             "-created_at",
         )
         order_by_param = "-min_values" if order_by_param.startswith("-") else "min_values"
+    # vendor_id is a UUID, so "A-Z" has to sort on the vendor's name instead
+    elif order_by_param in ["vendor_id", "-vendor_id"]:
+        order_by_param = "-vendor_name" if order_by_param.startswith("-") else "vendor_name"
+        issue_queryset = issue_queryset.annotate(vendor_name=Lower("order_detail__vendor__name")).order_by(
+            order_by_param, "-created_at"
+        )
     else:
         # If the order_by_param is created_at, then don't add the -created_at
         if "created_at" in order_by_param:

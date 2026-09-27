@@ -1837,6 +1837,75 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
           )
         );
 
+      case "requested_delivery_date":
+        return getIssueIds(
+          orderBy(array, [
+            getSortOrderToFilterEmptyValues.bind(null, "requested_delivery_date"),
+            "requested_delivery_date",
+          ])
+        );
+      case "-requested_delivery_date":
+        return getIssueIds(
+          orderBy(
+            array,
+            [getSortOrderToFilterEmptyValues.bind(null, "requested_delivery_date"), "requested_delivery_date"],
+            ["asc", "desc"]
+          )
+        );
+
+      case "next_state_target_date":
+        return getIssueIds(
+          orderBy(array, [
+            getSortOrderToFilterEmptyValues.bind(null, "next_state_target_date"),
+            "next_state_target_date",
+          ])
+        );
+      case "-next_state_target_date":
+        return getIssueIds(
+          orderBy(
+            array,
+            [getSortOrderToFilterEmptyValues.bind(null, "next_state_target_date"), "next_state_target_date"],
+            ["asc", "desc"]
+          )
+        );
+
+      // text
+      case "vendor_id":
+      case "-vendor_id": {
+        const { getVendorById } = this.rootIssueStore.rootStore.vendor;
+        return getIssueIds(
+          orderBy(
+            array,
+            [
+              getSortOrderToFilterEmptyValues.bind(null, "vendor_id"),
+              (issue) => (issue.vendor_id ? (getVendorById(issue.vendor_id)?.name ?? "").toLowerCase() : ""),
+            ],
+            ["asc", key === "vendor_id" ? "asc" : "desc"]
+          )
+        );
+      }
+      case "category":
+      case "-category":
+        return getIssueIds(
+          orderBy(
+            array,
+            [getSortOrderToFilterEmptyValues.bind(null, "category"), (issue) => (issue.category ?? "").toLowerCase()],
+            ["asc", key === "category" ? "asc" : "desc"]
+          )
+        );
+      case "order_number":
+      case "-order_number":
+        return getIssueIds(
+          orderBy(
+            array,
+            [
+              getSortOrderToFilterEmptyValues.bind(null, "order_number"),
+              (issue) => (issue.order_number ?? "").toLowerCase(),
+            ],
+            ["asc", key === "order_number" ? "asc" : "desc"]
+          )
+        );
+
       // custom
       case "-priority": {
         const sortArray = ISSUE_PRIORITIES.map((i) => i.key);
