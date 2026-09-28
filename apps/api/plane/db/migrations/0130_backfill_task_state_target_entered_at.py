@@ -16,12 +16,12 @@ def backfill_entered_at(apps, schema_editor):
     State = apps.get_model("db", "State")
     TaskStateTarget = apps.get_model("db", "TaskStateTarget")
 
-    state_project = dict(State.objects.filter(deleted_at__isnull=True).values_list("id", "project_id"))
+    state_project = dict(State._default_manager.filter(deleted_at__isnull=True).values_list("id", "project_id"))
 
     entries = defaultdict(dict)
     initial_state = {}
     activities = (
-        IssueActivity.objects.filter(field="state", deleted_at__isnull=True, issue_id__isnull=False)
+        IssueActivity._default_manager.filter(field="state", deleted_at__isnull=True, issue_id__isnull=False)
         .order_by("created_at")
         .values_list("issue_id", "old_identifier", "new_identifier", "created_at")
     )
@@ -32,14 +32,14 @@ def backfill_entered_at(apps, schema_editor):
 
     existing = {
         (issue_id, state_id): (pk, entered_at)
-        for pk, issue_id, state_id, entered_at in TaskStateTarget.objects.filter(deleted_at__isnull=True).values_list(
+        for pk, issue_id, state_id, entered_at in TaskStateTarget._default_manager.filter(deleted_at__isnull=True).values_list(
             "id", "issue_id", "state_id", "entered_at"
         )
     }
 
     to_create = []
     to_update = []
-    issues = Issue.objects.filter(deleted_at__isnull=True).values_list(
+    issues = Issue._default_manager.filter(deleted_at__isnull=True).values_list(
         "id", "project_id", "workspace_id", "state_id", "created_at"
     )
     for issue_id, project_id, workspace_id, current_state_id, created_at in issues.iterator(chunk_size=BATCH_SIZE):
@@ -65,8 +65,8 @@ def backfill_entered_at(apps, schema_editor):
             elif row[1] is None:
                 to_update.append(TaskStateTarget(id=row[0], entered_at=entered_at))
 
-    TaskStateTarget.objects.bulk_create(to_create, batch_size=BATCH_SIZE)
-    TaskStateTarget.objects.bulk_update(to_update, ["entered_at"], batch_size=BATCH_SIZE)
+    TaskStateTarget._default_manager.bulk_create(to_create, batch_size=BATCH_SIZE)
+    TaskStateTarget._default_manager.bulk_update(to_update, ["entered_at"], batch_size=BATCH_SIZE)
 
 
 class Migration(migrations.Migration):
