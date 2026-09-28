@@ -129,6 +129,11 @@ class OrderDetail(ProjectBaseModel):
         blank=True,
         related_name="order_details",
     )
+    # free-text PO number; the purchase_order FK above is the retired PO catalog, kept only for existing data
+    purchase_order_number = models.CharField(max_length=255, blank=True)
+    fabric_price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, validators=[MinValueValidator(0)])
+    trims_price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, validators=[MinValueValidator(0)])
+    fob_price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, validators=[MinValueValidator(0)])
     requested_delivery_date = models.DateField(null=True, blank=True)
 
     class Meta:

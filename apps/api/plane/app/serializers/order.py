@@ -75,6 +75,10 @@ class OrderDetailSerializer(BaseSerializer):
             "vendor",
             "style",
             "purchase_order",
+            "purchase_order_number",
+            "fabric_price",
+            "trims_price",
+            "fob_price",
             "requested_delivery_date",
         ]
         read_only_fields = ["workspace", "project", "issue"]

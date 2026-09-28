@@ -25,7 +25,6 @@ export type TIssueGroupByOptions =
   | "team_project"
   | "vendor"
   | "style"
-  | "purchase_order"
   | null;
 
 export type TIssueOrderByOptions =
@@ -90,7 +89,6 @@ export type TIssueParams =
   | "team_project"
   | "vendor"
   | "style"
-  | "purchase_order"
   | "group_by"
   | "sub_group_by"
   | "order_by"

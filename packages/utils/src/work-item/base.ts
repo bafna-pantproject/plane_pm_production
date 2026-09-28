@@ -262,6 +262,10 @@ export const issueCountBasedOnFilters = (
   return issuesCount;
 };
 
+// saved views may still reference the retired "purchase_order" grouping; fall back to ungrouped
+const validGroupBy = (groupBy: IIssueDisplayFilterOptions["group_by"] | undefined) =>
+  groupBy && (groupBy as string) !== "purchase_order" ? groupBy : null;
+
 /**
  * @description This method is used to apply the display filters on the issues
  * @param {IIssueDisplayFilterOptions} displayFilters
@@ -279,8 +283,8 @@ export const getComputedDisplayFilters = (
     },
     layout: filters?.layout || EIssueLayoutTypes.LIST,
     order_by: filters?.order_by || "sort_order",
-    group_by: filters?.group_by || null,
-    sub_group_by: filters?.sub_group_by || null,
+    group_by: validGroupBy(filters?.group_by),
+    sub_group_by: validGroupBy(filters?.sub_group_by),
     sub_issue: filters?.sub_issue || false,
     show_empty_groups: filters?.show_empty_groups || false,
   };

@@ -155,7 +155,7 @@ class IssueListEndpoint(BaseAPIView):
             )
             .annotate(vendor_id=order_detail_subquery("vendor_id"))
             .annotate(style_id=order_detail_subquery("style_id"))
-            .annotate(purchase_order_id=order_detail_subquery("purchase_order_id"))
+            .annotate(purchase_order_number=order_detail_subquery("purchase_order_number"))
             .annotate(requested_delivery_date=order_detail_subquery("requested_delivery_date"))
             .annotate(category=order_detail_subquery("category"))
             .annotate(order_number=order_detail_subquery("order_number"))
@@ -214,7 +214,7 @@ class IssueListEndpoint(BaseAPIView):
                 "deleted_at",
                 "vendor_id",
                 "style_id",
-                "purchase_order_id",
+                "purchase_order_number",
                 "requested_delivery_date",
                 "category",
                 "order_number",
@@ -280,7 +280,7 @@ class IssueViewSet(BaseViewSet):
             )
             .annotate(vendor_id=order_detail_subquery("vendor_id"))
             .annotate(style_id=order_detail_subquery("style_id"))
-            .annotate(purchase_order_id=order_detail_subquery("purchase_order_id"))
+            .annotate(purchase_order_number=order_detail_subquery("purchase_order_number"))
             .annotate(requested_delivery_date=order_detail_subquery("requested_delivery_date"))
             .annotate(category=order_detail_subquery("category"))
             .annotate(order_number=order_detail_subquery("order_number"))
@@ -494,7 +494,7 @@ class IssueViewSet(BaseViewSet):
                     "deleted_at",
                     "vendor_id",
                     "style_id",
-                    "purchase_order_id",
+                    "purchase_order_number",
                     "requested_delivery_date",
                     "category",
                     "order_number",

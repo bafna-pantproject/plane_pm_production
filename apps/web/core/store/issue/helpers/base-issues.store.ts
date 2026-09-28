@@ -126,7 +126,6 @@ export const ISSUE_GROUP_BY_KEY: Record<TIssueDisplayFilterOptions, keyof TIssue
   team_project: "project_id",
   vendor: "vendor_id",
   style: "style_id",
-  purchase_order: "purchase_order_id",
 };
 
 export const ISSUE_FILTER_DEFAULT_DATA: Record<TIssueDisplayFilterOptions, keyof TIssue> = {
@@ -143,7 +142,6 @@ export const ISSUE_FILTER_DEFAULT_DATA: Record<TIssueDisplayFilterOptions, keyof
   team_project: "project_id",
   vendor: "vendor_id",
   style: "style_id",
-  purchase_order: "purchase_order_id",
 };
 
 // This constant maps the order by keys to the respective issue property that the key relies on

@@ -67,7 +67,7 @@ export type TBaseIssue = {
   // garment order tracking (optional: not present on every issue payload)
   vendor_id?: string | null;
   style_id?: string | null;
-  purchase_order_id?: string | null;
+  purchase_order_number?: string | null;
   requested_delivery_date?: string | null;
   category?: string | null;
   order_number?: string | null;

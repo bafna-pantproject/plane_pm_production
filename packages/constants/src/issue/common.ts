@@ -40,7 +40,6 @@ export enum EIssueGroupByToServerOptions {
   "team_project" = "project_id",
   "vendor" = "vendor_id",
   "style" = "style_id",
-  "purchase_order" = "purchase_order_id",
 }
 
 export enum EIssueGroupBYServerToProperty {
@@ -127,7 +126,6 @@ export const ISSUE_GROUP_BY_OPTIONS: {
   { key: "module", titleTranslationKey: "common.module" }, // required this on my issues
   { key: "vendor", titleTranslationKey: "common.vendor" },
   { key: "style", titleTranslationKey: "common.style" },
-  { key: "purchase_order", titleTranslationKey: "common.purchase_order" },
   { key: "labels", titleTranslationKey: "common.labels" },
   { key: "assignees", titleTranslationKey: "common.assignees" },
   { key: "created_by", titleTranslationKey: "common.created_by" },

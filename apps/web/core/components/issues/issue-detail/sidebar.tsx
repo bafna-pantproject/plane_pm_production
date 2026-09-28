@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { Barcode, Boxes, Building2, CalendarClock, Hash, Receipt, Tag } from "lucide-react";
+import { Banknote, Barcode, Boxes, Building2, CalendarClock, Hash, Receipt, Tag } from "lucide-react";
 import { observer } from "mobx-react";
 import { useEffect, useState } from "react";
 // i18n
@@ -44,7 +44,6 @@ import { useMember } from "@/hooks/store/use-member";
 import { useOrderDetail } from "@/hooks/store/use-order-detail";
 import { useProject } from "@/hooks/store/use-project";
 import { useProjectState } from "@/hooks/store/use-project-state";
-import { usePurchaseOrder } from "@/hooks/store/use-purchase-order";
 import { useStyle } from "@/hooks/store/use-style";
 import { useVendor } from "@/hooks/store/use-vendor";
 import useDebounce from "@/hooks/use-debounce";
@@ -56,6 +55,8 @@ import { CatalogSelect } from "./catalog-select";
 import { IssueCycleSelect } from "./cycle-select";
 import { IssueLabel } from "./label";
 import { IssueModuleSelect } from "./module-select";
+import { OrderDetailPriceInput } from "./order-detail-price-input";
+import { PurchaseOrderNumberInput } from "./purchase-order-number-input";
 import { ReasonConfirmationModal } from "./reason-confirmation-modal";
 import type { TIssueOperations } from "./root";
 import { IssueTNAPlan } from "./tna-plan";
@@ -81,7 +82,6 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
   const { getStateById } = useProjectState();
   const { workspaceVendors, createVendor, getVendorById } = useVendor();
   const { workspaceStyles, createStyle } = useStyle();
-  const { workspacePurchaseOrders, createPurchaseOrder } = usePurchaseOrder();
   const { getOrderDetailByIssueId, fetchIssueOrderDetail, updateIssueOrderDetail } = useOrderDetail();
   const orderDetail = getOrderDetailByIssueId(issueId);
 
@@ -408,19 +408,48 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
             </SidebarPropertyListItem>
 
             <SidebarPropertyListItem icon={Receipt} label={t("common.purchase_order")}>
-              <CatalogSelect
-                className="w-full grow"
-                value={orderDetail?.purchase_order}
-                onChange={(val) => updateOrderDetail({ purchase_order: val })}
-                options={(workspacePurchaseOrders ?? []).map((po) => ({ id: po.id, label: po.po_number }))}
-                placeholder={t("common.purchase_order")}
+              <PurchaseOrderNumberInput
+                key={issueId}
+                workspaceSlug={workspaceSlug}
+                projectId={projectId}
+                issueId={issueId}
                 disabled={!isEditable}
-                // a PO must belong to a vendor, so quick-create is only offered once one is picked above
-                onCreate={
-                  isEditable && orderDetail?.vendor
-                    ? (name) => createPurchaseOrder(workspaceSlug, { po_number: name, vendor: orderDetail.vendor! })
-                    : undefined
-                }
+              />
+            </SidebarPropertyListItem>
+
+            <SidebarPropertyListItem icon={Banknote} label={t("common.fabric_price")}>
+              <OrderDetailPriceInput
+                key={issueId}
+                workspaceSlug={workspaceSlug}
+                projectId={projectId}
+                issueId={issueId}
+                field="fabric_price"
+                placeholder={t("common.fabric_price")}
+                disabled={!isEditable}
+              />
+            </SidebarPropertyListItem>
+
+            <SidebarPropertyListItem icon={Banknote} label={t("common.trims_price")}>
+              <OrderDetailPriceInput
+                key={issueId}
+                workspaceSlug={workspaceSlug}
+                projectId={projectId}
+                issueId={issueId}
+                field="trims_price"
+                placeholder={t("common.trims_price")}
+                disabled={!isEditable}
+              />
+            </SidebarPropertyListItem>
+
+            <SidebarPropertyListItem icon={Banknote} label={t("common.fob_price")}>
+              <OrderDetailPriceInput
+                key={issueId}
+                workspaceSlug={workspaceSlug}
+                projectId={projectId}
+                issueId={issueId}
+                field="fob_price"
+                placeholder={t("common.fob_price")}
+                disabled={!isEditable}
               />
             </SidebarPropertyListItem>
 

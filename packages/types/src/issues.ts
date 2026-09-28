@@ -128,8 +128,7 @@ export type GroupByColumnTypes =
   | "created_by"
   | "team_project"
   | "vendor"
-  | "style"
-  | "purchase_order";
+  | "style";
 
 export type TGetColumns = {
   isWorkspaceLevel?: boolean;

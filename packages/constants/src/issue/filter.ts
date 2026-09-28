@@ -31,7 +31,6 @@ export enum EServerGroupByToFilterOptions {
   "created_by" = "created_by",
   "vendor_id" = "vendor",
   "style_id" = "style",
-  "purchase_order_id" = "purchase_order",
 }
 
 export enum EIssueFilterType {

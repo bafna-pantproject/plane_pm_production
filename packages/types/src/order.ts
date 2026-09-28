@@ -61,6 +61,11 @@ export interface TOrderDetail {
   vendor: string | null;
   style: string | null;
   purchase_order: string | null;
+  purchase_order_number: string;
+  // decimals arrive from the API as strings, e.g. "12.50"
+  fabric_price: string | null;
+  trims_price: string | null;
+  fob_price: string | null;
   requested_delivery_date: string | null;
 }
 

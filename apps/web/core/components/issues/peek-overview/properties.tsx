@@ -4,7 +4,9 @@
  * See the LICENSE file for details.
  */
 
+import { Banknote, Receipt } from "lucide-react";
 import { observer } from "mobx-react";
+import { useEffect } from "react";
 // i18n
 import { useTranslation } from "@plane/i18n";
 // ui icons
@@ -32,6 +34,7 @@ import { SidebarPropertyListItem } from "@/components/common/layout/sidebar/prop
 // helpers
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
 import { useMember } from "@/hooks/store/use-member";
+import { useOrderDetail } from "@/hooks/store/use-order-detail";
 import { useProject } from "@/hooks/store/use-project";
 import { useProjectState } from "@/hooks/store/use-project-state";
 // plane web components
@@ -41,6 +44,8 @@ import type { TIssueOperations } from "../issue-detail";
 import { IssueCycleSelect } from "../issue-detail/cycle-select";
 import { IssueLabel } from "../issue-detail/label";
 import { IssueModuleSelect } from "../issue-detail/module-select";
+import { OrderDetailPriceInput } from "../issue-detail/order-detail-price-input";
+import { PurchaseOrderNumberInput } from "../issue-detail/purchase-order-number-input";
 import { ReasonConfirmationModal } from "../issue-detail/reason-confirmation-modal";
 import { IssueTNAPlan } from "../issue-detail/tna-plan";
 
@@ -62,6 +67,8 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
   } = useIssueDetail();
   const { getStateById } = useProjectState();
   const { getUserDetails } = useMember();
+  const { getOrderDetailByIssueId, fetchIssueOrderDetail } = useOrderDetail();
+  const orderDetail = getOrderDetailByIssueId(issueId);
   // reason-required confirmation for changing an already-set due date
   const { requestChange: requestDueDateChange, reasonModalProps: dueDateReasonModalProps } = useDateChangeReason({
     workspaceSlug,
@@ -69,6 +76,12 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
     issueId,
     commentLabel: "Vendor Promised Delivery Date Changed",
   });
+  // the project-wide bulk fetch (project-wrapper.tsx) doesn't run when the peek is opened from a
+  // workspace-level view, and may not have completed yet otherwise, so backstop it here.
+  useEffect(() => {
+    if (!orderDetail) fetchIssueOrderDetail(workspaceSlug, projectId, issueId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workspaceSlug, projectId, issueId]);
   // derived values
   const issue = getIssueById(issueId);
   if (!issue) return <></>;
@@ -230,6 +243,52 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
 
         <SidebarPropertyListItem icon={LabelPropertyIcon} label={t("common.labels")}>
           <IssueLabel workspaceSlug={workspaceSlug} projectId={projectId} issueId={issueId} disabled={disabled} />
+        </SidebarPropertyListItem>
+
+        <SidebarPropertyListItem icon={Receipt} label={t("common.purchase_order")}>
+          <PurchaseOrderNumberInput
+            key={issueId}
+            workspaceSlug={workspaceSlug}
+            projectId={projectId}
+            issueId={issueId}
+            disabled={disabled}
+          />
+        </SidebarPropertyListItem>
+
+        <SidebarPropertyListItem icon={Banknote} label={t("common.fabric_price")}>
+          <OrderDetailPriceInput
+            key={issueId}
+            workspaceSlug={workspaceSlug}
+            projectId={projectId}
+            issueId={issueId}
+            field="fabric_price"
+            placeholder={t("common.fabric_price")}
+            disabled={disabled}
+          />
+        </SidebarPropertyListItem>
+
+        <SidebarPropertyListItem icon={Banknote} label={t("common.trims_price")}>
+          <OrderDetailPriceInput
+            key={issueId}
+            workspaceSlug={workspaceSlug}
+            projectId={projectId}
+            issueId={issueId}
+            field="trims_price"
+            placeholder={t("common.trims_price")}
+            disabled={disabled}
+          />
+        </SidebarPropertyListItem>
+
+        <SidebarPropertyListItem icon={Banknote} label={t("common.fob_price")}>
+          <OrderDetailPriceInput
+            key={issueId}
+            workspaceSlug={workspaceSlug}
+            projectId={projectId}
+            issueId={issueId}
+            field="fob_price"
+            placeholder={t("common.fob_price")}
+            disabled={disabled}
+          />
         </SidebarPropertyListItem>
       </div>
 

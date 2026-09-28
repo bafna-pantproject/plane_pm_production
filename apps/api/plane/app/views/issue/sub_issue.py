@@ -20,6 +20,7 @@ from rest_framework import status
 
 # Module imports
 from .. import BaseAPIView
+from .base import order_detail_subquery
 from plane.app.serializers import IssueSerializer
 from plane.app.permissions import ProjectEntityPermission
 from plane.db.models import Issue, IssueLink, FileAsset, CycleIssue, IssueLabel, IssueAssignee, ModuleIssue
@@ -128,6 +129,12 @@ class SubIssuesEndpoint(BaseAPIView):
                 ),
             )
             .annotate(state_group=F("state__group"))
+            .annotate(vendor_id=order_detail_subquery("vendor_id"))
+            .annotate(style_id=order_detail_subquery("style_id"))
+            .annotate(purchase_order_number=order_detail_subquery("purchase_order_number"))
+            .annotate(requested_delivery_date=order_detail_subquery("requested_delivery_date"))
+            .annotate(category=order_detail_subquery("category"))
+            .annotate(order_number=order_detail_subquery("order_number"))
         )
 
         # Ordering
@@ -165,6 +172,12 @@ class SubIssuesEndpoint(BaseAPIView):
                 "is_draft",
                 "archived_at",
                 "state_group",
+                "vendor_id",
+                "style_id",
+                "purchase_order_number",
+                "requested_delivery_date",
+                "category",
+                "order_number",
             )
         )
 
@@ -243,7 +256,27 @@ class SubIssuesEndpoint(BaseAPIView):
             result[sub_issue.state_group].append(str(sub_issue.id))
 
         serializer = IssueSerializer(updated_sub_issues, many=True)
+
+        # IssueSerializer doesn't carry the OrderDetail-derived card fields, so merge them in
+        order_detail_fields = [
+            "vendor_id",
+            "style_id",
+            "purchase_order_number",
+            "requested_delivery_date",
+            "category",
+            "order_number",
+        ]
+        order_details = {
+            str(row["id"]): row
+            for row in updated_sub_issues.annotate(
+                **{field: order_detail_subquery(field) for field in order_detail_fields}
+            ).values("id", *order_detail_fields)
+        }
+        sub_issues_data = [
+            {**issue, **{field: order_details.get(str(issue["id"]), {}).get(field) for field in order_detail_fields}}
+            for issue in serializer.data
+        ]
         return Response(
-            {"sub_issues": serializer.data, "state_distribution": result},
+            {"sub_issues": sub_issues_data, "state_distribution": result},
             status=status.HTTP_200_OK,
         )

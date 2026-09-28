@@ -348,6 +348,30 @@ class TestIssueOrderDetailEndpoint:
         assert str(response.data["vendor"]) == str(vendor.id)
 
     @pytest.mark.django_db
+    def test_member_can_set_and_clear_prices(self, session_client, workspace, project, issue):
+        url = ISSUE_ORDER_DETAIL_URL.format(slug=workspace.slug, project_id=project.id, issue_id=issue.id)
+        response = session_client.patch(
+            url,
+            {"fabric_price": "12.50", "trims_price": "3.25", "fob_price": "20.00"},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_200_OK, response.data
+        assert response.data["fabric_price"] == "12.50"
+        assert response.data["trims_price"] == "3.25"
+        assert response.data["fob_price"] == "20.00"
+
+        response = session_client.patch(url, {"fabric_price": None}, format="json")
+        assert response.status_code == status.HTTP_200_OK, response.data
+        assert response.data["fabric_price"] is None
+        assert response.data["fob_price"] == "20.00"
+
+    @pytest.mark.django_db
+    def test_negative_price_is_rejected(self, session_client, workspace, project, issue):
+        url = ISSUE_ORDER_DETAIL_URL.format(slug=workspace.slug, project_id=project.id, issue_id=issue.id)
+        response = session_client.patch(url, {"fob_price": "-1.00"}, format="json")
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    @pytest.mark.django_db
     def test_guest_cannot_edit_order_detail(self, workspace, project, issue, guest):
         client = APIClient()
         client.force_authenticate(user=guest)

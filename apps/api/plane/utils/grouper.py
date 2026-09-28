@@ -16,7 +16,6 @@ from plane.db.models import (
     Module,
     Project,
     ProjectMember,
-    PurchaseOrder,
     State,
     Style,
     Vendor,
@@ -132,7 +131,7 @@ def issue_on_results(
         "state__group",
         "vendor_id",
         "style_id",
-        "purchase_order_id",
+        "purchase_order_number",
         "requested_delivery_date",
         "category",
         "order_number",
@@ -203,9 +202,6 @@ def issue_group_values(
         return list(Style.objects.filter(workspace__slug=slug, is_active=True).values_list("id", flat=True)) + [
             "None"
         ]
-
-    if field == "purchase_order_id":
-        return list(PurchaseOrder.objects.filter(workspace__slug=slug).values_list("id", flat=True)) + ["None"]
 
     if field == "project_id":
         queryset = Project.objects.filter(workspace__slug=slug).values_list("id", flat=True)
