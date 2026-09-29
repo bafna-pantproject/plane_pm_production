@@ -3,7 +3,7 @@
 # See the LICENSE file for details.
 
 # Django imports
-from django.db.models import Sum
+from django.db.models import Q, Sum
 from django.db.models.functions import ExtractMonth, ExtractYear
 
 # Third party imports
@@ -14,6 +14,7 @@ from rest_framework.response import Response
 from .base import BaseAPIView, BaseViewSet
 from plane.app.permissions import ROLE, allow_permission
 from plane.app.serializers import (
+    IssueShipmentSerializer,
     OrderDetailSerializer,
     PurchaseOrderSerializer,
     StyleSerializer,
@@ -23,6 +24,7 @@ from plane.app.serializers import (
 )
 from plane.db.models import (
     Issue,
+    IssueShipment,
     OrderDetail,
     PurchaseOrder,
     State,
@@ -309,6 +311,50 @@ class IssueStateTargetCascadeEndpoint(BaseAPIView):
             {"updated_issue_ids": [str(child_issue_id) for child_issue_id in child_issue_ids]},
             status=status.HTTP_200_OK,
         )
+
+
+class IssueShipmentsEndpoint(BaseAPIView):
+    """Partial shipments logged against an order. A parent's list also rolls up
+    its direct sub work items' shipments, since a split order ships through them."""
+
+    @allow_permission([ROLE.ADMIN, ROLE.MEMBER, ROLE.GUEST])
+    def get(self, request, slug, project_id, issue_id):
+        shipments = IssueShipment.objects.filter(
+            Q(issue_id=issue_id) | Q(issue__parent_id=issue_id),
+            workspace__slug=slug,
+            project_id=project_id,
+            issue__deleted_at__isnull=True,
+        ).select_related("issue")
+        # fallback order quantity for a parent that has none of its own: the sum of its split parts
+        sub_issues_quantity = OrderDetail.objects.filter(
+            issue__parent_id=issue_id,
+            issue__deleted_at__isnull=True,
+            project_id=project_id,
+        ).aggregate(total=Sum("quantity"))["total"]
+        return Response(
+            {
+                "shipments": IssueShipmentSerializer(shipments, many=True).data,
+                "sub_issues_quantity": sub_issues_quantity,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    @allow_permission([ROLE.ADMIN, ROLE.MEMBER])
+    def post(self, request, slug, project_id, issue_id):
+        if not Issue.issue_objects.filter(pk=issue_id, project_id=project_id, workspace__slug=slug).exists():
+            return Response({"error": "Work item not found"}, status=status.HTTP_404_NOT_FOUND)
+        serializer = IssueShipmentSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(issue_id=issue_id, project_id=project_id)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class IssueShipmentDetailEndpoint(BaseAPIView):
+    @allow_permission([ROLE.ADMIN, ROLE.MEMBER])
+    def delete(self, request, slug, project_id, issue_id, pk):
+        IssueShipment.objects.filter(pk=pk, issue_id=issue_id, project_id=project_id, workspace__slug=slug).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class IssueOrderDetailEndpoint(BaseAPIView):

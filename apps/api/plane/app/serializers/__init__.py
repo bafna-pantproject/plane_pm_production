@@ -53,6 +53,7 @@ from .order import (
     PurchaseOrderSerializer,
     OrderDetailSerializer,
     TaskStateTargetSerializer,
+    IssueShipmentSerializer,
 )
 from .view import IssueViewSerializer, ViewIssueListSerializer
 from .cycle import (

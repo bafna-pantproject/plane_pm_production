@@ -59,6 +59,7 @@ import { OrderDetailPriceInput } from "./order-detail-price-input";
 import { PurchaseOrderNumberInput } from "./purchase-order-number-input";
 import { ReasonConfirmationModal } from "./reason-confirmation-modal";
 import type { TIssueOperations } from "./root";
+import { IssueShipments } from "./shipments";
 import { IssueTNAPlan } from "./tna-plan";
 
 type Props = {
@@ -473,6 +474,16 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
             </SidebarPropertyListItem>
           </div>
 
+          <IssueShipments
+            workspaceSlug={workspaceSlug}
+            projectId={projectId}
+            issueId={issueId}
+            disabled={!isEditable}
+            showHistory
+            className="mt-5"
+            position="above-tna"
+          />
+
           <div className="mt-5">
             <IssueTNAPlan
               workspaceSlug={workspaceSlug}
@@ -482,6 +493,16 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
               subIssuesCount={issue.sub_issues_count ?? 0}
             />
           </div>
+
+          <IssueShipments
+            workspaceSlug={workspaceSlug}
+            projectId={projectId}
+            issueId={issueId}
+            disabled={!isEditable}
+            showHistory
+            className="mt-5"
+            position="below-tna"
+          />
         </div>
       </div>
 

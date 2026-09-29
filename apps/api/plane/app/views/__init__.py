@@ -94,6 +94,8 @@ from .order import (
     IssueStateTargetsEndpoint,
     IssueStateTargetDetailEndpoint,
     IssueStateTargetCascadeEndpoint,
+    IssueShipmentsEndpoint,
+    IssueShipmentDetailEndpoint,
     IssueOrderDetailEndpoint,
     ProjectOrderDetailsEndpoint,
     ProjectOrderDetailCategoriesEndpoint,

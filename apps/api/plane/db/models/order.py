@@ -177,3 +177,27 @@ class TaskStateTarget(ProjectBaseModel):
 
     def __str__(self):
         return f"Task state target <{self.issue_id}:{self.state_id}>"
+
+
+class IssueShipment(ProjectBaseModel):
+    """One partial (or full) shipment of an order: how many pieces went out on a given day.
+    The balance is the order quantity minus the sum of these rows."""
+
+    issue = models.ForeignKey("db.Issue", on_delete=models.CASCADE, related_name="shipments")
+    shipped_date = models.DateField()
+    quantity = models.PositiveIntegerField(validators=[MinValueValidator(1)])
+    note = models.CharField(max_length=255, blank=True)
+
+    class Meta:
+        verbose_name = "Issue Shipment"
+        verbose_name_plural = "Issue Shipments"
+        db_table = "issue_shipments"
+        ordering = ("-shipped_date", "-created_at")
+
+    def save(self, *args, **kwargs):
+        if self._state.adding and not self.project_id:
+            self.project = self.issue.project
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"Issue shipment <{self.issue_id}:{self.shipped_date}:{self.quantity}>"

@@ -47,6 +47,7 @@ import { IssueModuleSelect } from "../issue-detail/module-select";
 import { OrderDetailPriceInput } from "../issue-detail/order-detail-price-input";
 import { PurchaseOrderNumberInput } from "../issue-detail/purchase-order-number-input";
 import { ReasonConfirmationModal } from "../issue-detail/reason-confirmation-modal";
+import { IssueShipments } from "../issue-detail/shipments";
 import { IssueTNAPlan } from "../issue-detail/tna-plan";
 
 interface IPeekOverviewProperties {
@@ -292,6 +293,16 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
         </SidebarPropertyListItem>
       </div>
 
+      <IssueShipments
+        workspaceSlug={workspaceSlug}
+        projectId={projectId}
+        issueId={issueId}
+        disabled={disabled}
+        textClassName="text-body-xs-medium"
+        className="mt-5"
+        position="above-tna"
+      />
+
       <div className="mt-5">
         <IssueTNAPlan
           workspaceSlug={workspaceSlug}
@@ -302,6 +313,16 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
           subIssuesCount={issue?.sub_issues_count ?? 0}
         />
       </div>
+
+      <IssueShipments
+        workspaceSlug={workspaceSlug}
+        projectId={projectId}
+        issueId={issueId}
+        disabled={disabled}
+        textClassName="text-body-xs-medium"
+        className="mt-5"
+        position="below-tna"
+      />
 
       <ReasonConfirmationModal
         {...dueDateReasonModalProps}

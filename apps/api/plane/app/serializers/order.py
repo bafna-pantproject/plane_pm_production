@@ -7,7 +7,7 @@ from rest_framework import serializers
 
 # Module imports
 from .base import BaseSerializer
-from plane.db.models import OrderDetail, PurchaseOrder, Style, TaskStateTarget, Vendor, VendorCapacity
+from plane.db.models import IssueShipment, OrderDetail, PurchaseOrder, Style, TaskStateTarget, Vendor, VendorCapacity
 
 
 class VendorSerializer(BaseSerializer):
@@ -89,3 +89,24 @@ class TaskStateTargetSerializer(BaseSerializer):
         model = TaskStateTarget
         fields = ["id", "workspace_id", "project_id", "issue", "state", "target_date", "entered_at"]
         read_only_fields = ["workspace", "project", "issue", "state", "entered_at"]
+
+
+class IssueShipmentSerializer(BaseSerializer):
+    # lets a parent's roll-up label rows that were logged on one of its sub work items
+    issue_sequence_id = serializers.IntegerField(source="issue.sequence_id", read_only=True)
+
+    class Meta:
+        model = IssueShipment
+        fields = [
+            "id",
+            "workspace_id",
+            "project_id",
+            "issue",
+            "issue_sequence_id",
+            "shipped_date",
+            "quantity",
+            "note",
+            "created_at",
+            "created_by",
+        ]
+        read_only_fields = ["workspace", "project", "issue", "created_at", "created_by"]

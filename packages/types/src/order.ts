@@ -78,3 +78,24 @@ export interface TTaskStateTarget {
   target_date: string | null;
   readonly entered_at: string | null;
 }
+
+/** one partial (or full) shipment of an order; balance = order quantity minus the sum of these. */
+export interface TIssueShipment {
+  readonly id: string;
+  workspace_id: string;
+  project_id: string;
+  /** the work item the shipment was logged on - a sub work item's id when rolled up onto its parent. */
+  readonly issue: string;
+  readonly issue_sequence_id: number;
+  shipped_date: string;
+  quantity: number;
+  note: string;
+  readonly created_at: string;
+  readonly created_by: string | null;
+}
+
+export interface TIssueShipmentList {
+  shipments: TIssueShipment[];
+  /** sum of the direct sub work items' quantities; the fallback order quantity for a parent with none of its own. */
+  sub_issues_quantity: number | null;
+}

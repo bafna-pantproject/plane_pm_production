@@ -58,6 +58,8 @@ import type { IPurchaseOrderStore } from "./purchase-order.store";
 import { PurchaseOrderStore } from "./purchase-order.store";
 import type { ITaskStateTargetStore } from "./task-state-target.store";
 import { TaskStateTargetStore } from "./task-state-target.store";
+import type { IIssueShipmentStore } from "./issue-shipment.store";
+import { IssueShipmentStore } from "./issue-shipment.store";
 import type { IStyleStore } from "./style.store";
 import { StyleStore } from "./style.store";
 import type { IVendorStore } from "./vendor.store";
@@ -117,6 +119,7 @@ export class CoreRootStore {
   style: IStyleStore;
   purchaseOrder: IPurchaseOrderStore;
   taskStateTarget: ITaskStateTargetStore;
+  issueShipment: IIssueShipmentStore;
   orderDetail: IOrderDetailStore;
 
   constructor() {
@@ -154,6 +157,7 @@ export class CoreRootStore {
     this.style = new StyleStore(this);
     this.purchaseOrder = new PurchaseOrderStore(this);
     this.taskStateTarget = new TaskStateTargetStore(this);
+    this.issueShipment = new IssueShipmentStore(this);
     this.orderDetail = new OrderDetailStore(this);
   }
 
@@ -193,6 +197,7 @@ export class CoreRootStore {
     this.style = new StyleStore(this);
     this.purchaseOrder = new PurchaseOrderStore(this);
     this.taskStateTarget = new TaskStateTargetStore(this);
+    this.issueShipment = new IssueShipmentStore(this);
     this.orderDetail = new OrderDetailStore(this);
   }
 }

@@ -13,6 +13,7 @@ from rest_framework.test import APIClient
 
 from plane.db.models import (
     Issue,
+    IssueShipment,
     OrderDetail,
     Project,
     ProjectMember,
@@ -30,6 +31,8 @@ VENDOR_CAPACITIES_URL = "/api/workspaces/{slug}/vendors/{vendor_id}/capacities/"
 VENDOR_CAPACITY_URL = "/api/workspaces/{slug}/vendors/{vendor_id}/capacities/{pk}/"
 VENDOR_CAPACITY_USAGE_URL = "/api/workspaces/{slug}/vendors/{vendor_id}/capacity-usage/"
 ISSUE_ORDER_DETAIL_URL = "/api/workspaces/{slug}/projects/{project_id}/issues/{issue_id}/order-detail/"
+ISSUE_SHIPMENTS_URL = "/api/workspaces/{slug}/projects/{project_id}/issues/{issue_id}/shipments/"
+ISSUE_SHIPMENT_URL = "/api/workspaces/{slug}/projects/{project_id}/issues/{issue_id}/shipments/{pk}/"
 ISSUE_STATE_TARGET_CASCADE_URL = (
     "/api/workspaces/{slug}/projects/{project_id}/issues/{issue_id}/state-targets/cascade/"
 )
@@ -480,3 +483,124 @@ class TestIssueStateTargetCascadeEndpoint:
         url = ISSUE_STATE_TARGET_CASCADE_URL.format(slug=workspace.slug, project_id=project.id, issue_id=parent_issue.id)
         response = client.post(url)
         assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+@pytest.mark.contract
+class TestIssueShipmentEndpoint:
+    @pytest.fixture
+    def state(self, project):
+        return State.objects.create(
+            name="Shipping", project=project, workspace=project.workspace, group="started", default=True
+        )
+
+    @pytest.fixture
+    def make_issue(self, project, state, create_user):
+        def _make(name, parent=None, quantity=None):
+            issue = Issue.objects.create(
+                name=name,
+                project=project,
+                workspace=project.workspace,
+                state=state,
+                parent=parent,
+                created_by=create_user,
+            )
+            if quantity is not None:
+                OrderDetail.objects.update_or_create(
+                    issue=issue, defaults={"project": project, "quantity": quantity}
+                )
+            return issue
+
+        return _make
+
+    def _url(self, workspace, project, issue):
+        return ISSUE_SHIPMENTS_URL.format(slug=workspace.slug, project_id=project.id, issue_id=issue.id)
+
+    @pytest.mark.django_db
+    def test_member_can_log_shipments_and_list_them_newest_first(
+        self, session_client, workspace, project, make_issue
+    ):
+        issue = make_issue("Order", quantity=1000)
+        url = self._url(workspace, project, issue)
+        first = session_client.post(url, {"shipped_date": "2026-09-01", "quantity": 400}, format="json")
+        assert first.status_code == status.HTTP_201_CREATED, first.data
+        second = session_client.post(
+            url, {"shipped_date": "2026-09-10", "quantity": 300, "note": "Air freight"}, format="json"
+        )
+        assert second.status_code == status.HTTP_201_CREATED, second.data
+        assert str(second.data["issue"]) == str(issue.id)
+
+        response = session_client.get(url)
+        assert response.status_code == status.HTTP_200_OK
+        shipments = response.data["shipments"]
+        assert [row["quantity"] for row in shipments] == [300, 400]
+        assert shipments[0]["note"] == "Air freight"
+        assert response.data["sub_issues_quantity"] is None
+
+    @pytest.mark.django_db
+    def test_parent_rolls_up_direct_sub_issues_but_not_grandchildren(
+        self, session_client, workspace, project, make_issue
+    ):
+        parent = make_issue("Parent")
+        child_a = make_issue("Child A", parent=parent, quantity=600)
+        child_b = make_issue("Child B", parent=parent, quantity=400)
+        grandchild = make_issue("Grandchild", parent=child_a, quantity=100)
+        IssueShipment.objects.create(issue=parent, shipped_date="2026-09-01", quantity=50)
+        IssueShipment.objects.create(issue=child_a, shipped_date="2026-09-02", quantity=200)
+        IssueShipment.objects.create(issue=child_b, shipped_date="2026-09-03", quantity=100)
+        IssueShipment.objects.create(issue=grandchild, shipped_date="2026-09-04", quantity=10)
+
+        response = session_client.get(self._url(workspace, project, parent))
+        assert response.status_code == status.HTTP_200_OK
+        assert sorted(row["quantity"] for row in response.data["shipments"]) == [50, 100, 200]
+        assert response.data["sub_issues_quantity"] == 1000
+        child_row = next(row for row in response.data["shipments"] if row["quantity"] == 200)
+        assert child_row["issue_sequence_id"] == child_a.sequence_id
+
+    @pytest.mark.django_db
+    def test_over_shipping_is_accepted(self, session_client, workspace, project, make_issue):
+        issue = make_issue("Order", quantity=100)
+        response = session_client.post(
+            self._url(workspace, project, issue), {"shipped_date": "2026-09-01", "quantity": 150}, format="json"
+        )
+        assert response.status_code == status.HTTP_201_CREATED, response.data
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize("quantity", [0, -5])
+    def test_non_positive_quantity_is_rejected(self, session_client, workspace, project, make_issue, quantity):
+        issue = make_issue("Order")
+        response = session_client.post(
+            self._url(workspace, project, issue), {"shipped_date": "2026-09-01", "quantity": quantity}, format="json"
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    @pytest.mark.django_db
+    def test_shipped_date_is_required(self, session_client, workspace, project, make_issue):
+        issue = make_issue("Order")
+        response = session_client.post(self._url(workspace, project, issue), {"quantity": 10}, format="json")
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    @pytest.mark.django_db
+    def test_member_can_delete_a_shipment(self, session_client, workspace, project, make_issue):
+        issue = make_issue("Order")
+        shipment = IssueShipment.objects.create(issue=issue, shipped_date="2026-09-01", quantity=10)
+        url = ISSUE_SHIPMENT_URL.format(slug=workspace.slug, project_id=project.id, issue_id=issue.id, pk=shipment.id)
+        response = session_client.delete(url)
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+        assert not IssueShipment.objects.filter(pk=shipment.id).exists()
+
+    @pytest.mark.django_db
+    def test_guest_can_list_but_not_log_or_delete(self, workspace, project, make_issue, guest):
+        issue = make_issue("Order")
+        shipment = IssueShipment.objects.create(issue=issue, shipped_date="2026-09-01", quantity=10)
+        client = APIClient()
+        client.force_authenticate(user=guest)
+        url = self._url(workspace, project, issue)
+
+        assert client.get(url).status_code == status.HTTP_200_OK
+        response = client.post(url, {"shipped_date": "2026-09-02", "quantity": 5}, format="json")
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        detail_url = ISSUE_SHIPMENT_URL.format(
+            slug=workspace.slug, project_id=project.id, issue_id=issue.id, pk=shipment.id
+        )
+        assert client.delete(detail_url).status_code == status.HTTP_403_FORBIDDEN
+        assert IssueShipment.objects.filter(pk=shipment.id).exists()

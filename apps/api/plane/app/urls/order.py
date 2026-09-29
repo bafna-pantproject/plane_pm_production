@@ -6,6 +6,8 @@ from django.urls import path
 
 from plane.app.views import (
     IssueOrderDetailEndpoint,
+    IssueShipmentDetailEndpoint,
+    IssueShipmentsEndpoint,
     IssueStateTargetCascadeEndpoint,
     IssueStateTargetDetailEndpoint,
     IssueStateTargetsEndpoint,
@@ -79,6 +81,16 @@ urlpatterns = [
         "workspaces/<str:slug>/projects/<uuid:project_id>/issues/<uuid:issue_id>/state-targets/cascade/",
         IssueStateTargetCascadeEndpoint.as_view(),
         name="issue-state-target-cascade",
+    ),
+    path(
+        "workspaces/<str:slug>/projects/<uuid:project_id>/issues/<uuid:issue_id>/shipments/",
+        IssueShipmentsEndpoint.as_view(),
+        name="issue-shipments",
+    ),
+    path(
+        "workspaces/<str:slug>/projects/<uuid:project_id>/issues/<uuid:issue_id>/shipments/<uuid:pk>/",
+        IssueShipmentDetailEndpoint.as_view(),
+        name="issue-shipment-detail",
     ),
     path(
         "workspaces/<str:slug>/projects/<uuid:project_id>/order-details/",
