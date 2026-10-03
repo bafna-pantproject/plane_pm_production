@@ -71,6 +71,7 @@ export const CreateUpdateIssueModalBase = observer(function CreateUpdateIssueMod
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [selectedQuantity, setSelectedQuantity] = useState<number | null>(null);
   const [selectedRequestedDeliveryDate, setSelectedRequestedDeliveryDate] = useState<string | null>(null);
+  const [selectedOrderNumber, setSelectedOrderNumber] = useState<string>("");
   // store hooks
   const { t } = useTranslation();
   const { workspaceSlug, projectId: routerProjectId, cycleId, moduleId, workItem } = useParams();
@@ -101,6 +102,7 @@ export const CreateUpdateIssueModalBase = observer(function CreateUpdateIssueMod
       setSelectedQuantity(null);
       setSelectedVendorId(null);
       setSelectedRequestedDeliveryDate(null);
+      setSelectedOrderNumber("");
       return;
     }
     const response = await fetchIssue(workspaceSlug.toString(), projectId.toString(), issueId);
@@ -113,6 +115,7 @@ export const CreateUpdateIssueModalBase = observer(function CreateUpdateIssueMod
     setSelectedQuantity(orderDetail?.quantity ?? null);
     setSelectedVendorId(orderDetail?.vendor ?? null);
     setSelectedRequestedDeliveryDate(orderDetail?.requested_delivery_date ?? null);
+    setSelectedOrderNumber(orderDetail?.order_number ?? "");
   };
 
   useEffect(() => {
@@ -261,6 +264,7 @@ export const CreateUpdateIssueModalBase = observer(function CreateUpdateIssueMod
           quantity: selectedQuantity,
           ...(selectedVendorId ? { vendor: selectedVendorId } : {}),
           ...(selectedRequestedDeliveryDate ? { requested_delivery_date: selectedRequestedDeliveryDate } : {}),
+          ...(selectedOrderNumber.trim() ? { order_number: selectedOrderNumber.trim() } : {}),
         });
       }
 
@@ -284,6 +288,7 @@ export const CreateUpdateIssueModalBase = observer(function CreateUpdateIssueMod
       setSelectedCategory("");
       setSelectedQuantity(null);
       setSelectedRequestedDeliveryDate(null);
+      setSelectedOrderNumber("");
       return response;
     } catch (error: any) {
       setToast({
@@ -368,6 +373,7 @@ export const CreateUpdateIssueModalBase = observer(function CreateUpdateIssueMod
         quantity: selectedQuantity,
         vendor: selectedVendorId,
         requested_delivery_date: selectedRequestedDeliveryDate,
+        order_number: selectedOrderNumber.trim(),
       });
 
       // Run cycle, module, and property changes sequentially to avoid
@@ -460,6 +466,8 @@ export const CreateUpdateIssueModalBase = observer(function CreateUpdateIssueMod
     onQuantityChange: setSelectedQuantity,
     selectedRequestedDeliveryDate: selectedRequestedDeliveryDate,
     onRequestedDeliveryDateChange: setSelectedRequestedDeliveryDate,
+    orderNumber: selectedOrderNumber,
+    onOrderNumberChange: setSelectedOrderNumber,
   };
 
   return (

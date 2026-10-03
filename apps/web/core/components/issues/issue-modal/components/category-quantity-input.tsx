@@ -33,6 +33,8 @@ type TIssueCategoryQuantityInputProps = {
   workspaceSlug: string;
   selectedVendorId?: string | null;
   onVendorChange?: (vendorId: string | null) => void;
+  orderNumber?: string;
+  onOrderNumberChange?: (orderNumber: string) => void;
 };
 
 export const IssueCategoryQuantityInput = observer(function IssueCategoryQuantityInput(
@@ -51,6 +53,8 @@ export const IssueCategoryQuantityInput = observer(function IssueCategoryQuantit
     workspaceSlug,
     selectedVendorId = null,
     onVendorChange,
+    orderNumber = "",
+    onOrderNumberChange,
   } = props;
   // store hooks
   const { isMobile } = usePlatformOS();
@@ -94,6 +98,23 @@ export const IssueCategoryQuantityInput = observer(function IssueCategoryQuantit
             placeholder={t("common.vendor")}
             onCreate={(name) => createVendor(workspaceSlug, { name })}
             className="w-full rounded-sm border border-strong"
+          />
+        </div>
+      )}
+      {onOrderNumberChange && (
+        <div className="w-40">
+          <Input
+            id="order_number"
+            name="order_number"
+            type="text"
+            value={orderNumber}
+            onChange={(e) => {
+              onOrderNumberChange(e.target.value);
+              handleFormChange();
+            }}
+            placeholder={t("common.order_number")}
+            className="w-full text-body-sm-regular"
+            tabIndex={getIndex("order_number")}
           />
         </div>
       )}

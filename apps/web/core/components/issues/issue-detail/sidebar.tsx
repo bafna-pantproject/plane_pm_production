@@ -255,6 +255,25 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
               </SidebarPropertyListItem>
             )}
 
+            <SidebarPropertyListItem icon={CalendarClock} label={t("common.requested_delivery_date")}>
+              <DateDropdown
+                placeholder={t("common.requested_delivery_date")}
+                value={orderDetail?.requested_delivery_date ?? null}
+                onChange={(val) =>
+                  requestRequestedDeliveryDateChange(!!orderDetail?.requested_delivery_date, () =>
+                    updateOrderDetail({ requested_delivery_date: val ? renderFormattedPayloadDate(val) : null })
+                  )
+                }
+                disabled={!isEditable}
+                buttonVariant="transparent-with-text"
+                className="group w-full grow"
+                buttonContainerClassName="w-full text-left h-7.5"
+                buttonClassName={`text-body-xs-regular ${orderDetail?.requested_delivery_date ? "" : "text-placeholder"}`}
+                hideIcon
+                clearIconClassName="h-3 w-3 hidden group-hover:inline"
+              />
+            </SidebarPropertyListItem>
+
             <SidebarPropertyListItem icon={DueDatePropertyIcon} label={t("common.order_by.due_date")}>
               <div className="flex w-full items-center gap-2">
                 <DateDropdown
@@ -451,25 +470,6 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
                 field="fob_price"
                 placeholder={t("common.fob_price")}
                 disabled={!isEditable}
-              />
-            </SidebarPropertyListItem>
-
-            <SidebarPropertyListItem icon={CalendarClock} label={t("common.requested_delivery_date")}>
-              <DateDropdown
-                placeholder={t("common.requested_delivery_date")}
-                value={orderDetail?.requested_delivery_date ?? null}
-                onChange={(val) =>
-                  requestRequestedDeliveryDateChange(!!orderDetail?.requested_delivery_date, () =>
-                    updateOrderDetail({ requested_delivery_date: val ? renderFormattedPayloadDate(val) : null })
-                  )
-                }
-                disabled={!isEditable}
-                buttonVariant="transparent-with-text"
-                className="group w-full grow"
-                buttonContainerClassName="w-full text-left h-7.5"
-                buttonClassName={`text-body-xs-regular ${orderDetail?.requested_delivery_date ? "" : "text-placeholder"}`}
-                hideIcon
-                clearIconClassName="h-3 w-3 hidden group-hover:inline"
               />
             </SidebarPropertyListItem>
           </div>

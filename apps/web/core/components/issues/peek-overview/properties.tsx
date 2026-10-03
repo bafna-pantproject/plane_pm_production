@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { Banknote, Receipt } from "lucide-react";
+import { Banknote, CalendarClock, Receipt } from "lucide-react";
 import { observer } from "mobx-react";
 import { useEffect } from "react";
 // i18n
@@ -68,7 +68,7 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
   } = useIssueDetail();
   const { getStateById } = useProjectState();
   const { getUserDetails } = useMember();
-  const { getOrderDetailByIssueId, fetchIssueOrderDetail } = useOrderDetail();
+  const { getOrderDetailByIssueId, fetchIssueOrderDetail, updateIssueOrderDetail } = useOrderDetail();
   const orderDetail = getOrderDetailByIssueId(issueId);
   // reason-required confirmation for changing an already-set due date
   const { requestChange: requestDueDateChange, reasonModalProps: dueDateReasonModalProps } = useDateChangeReason({
@@ -77,6 +77,13 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
     issueId,
     commentLabel: "Vendor Promised Delivery Date Changed",
   });
+  const { requestChange: requestRequestedDeliveryDateChange, reasonModalProps: requestedDeliveryDateReasonModalProps } =
+    useDateChangeReason({
+      workspaceSlug,
+      projectId,
+      issueId,
+      commentLabel: "Requested Delivery Date Changed",
+    });
   // the project-wide bulk fetch (project-wrapper.tsx) doesn't run when the peek is opened from a
   // workspace-level view, and may not have completed yet otherwise, so backstop it here.
   useEffect(() => {
@@ -158,6 +165,27 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
             </span>
           </SidebarPropertyListItem>
         )}
+
+        <SidebarPropertyListItem icon={CalendarClock} label={t("common.requested_delivery_date")}>
+          <DateDropdown
+            value={orderDetail?.requested_delivery_date ?? null}
+            onChange={(val) =>
+              requestRequestedDeliveryDateChange(!!orderDetail?.requested_delivery_date, () =>
+                updateIssueOrderDetail(workspaceSlug, projectId, issueId, {
+                  requested_delivery_date: val ? renderFormattedPayloadDate(val) : null,
+                })
+              )
+            }
+            placeholder={t("common.requested_delivery_date")}
+            buttonVariant="transparent-with-text"
+            disabled={disabled}
+            className="group w-full grow"
+            buttonContainerClassName="w-full text-left h-7.5"
+            buttonClassName={`text-body-xs-medium ${orderDetail?.requested_delivery_date ? "" : "text-placeholder"}`}
+            hideIcon
+            clearIconClassName="h-3 w-3 hidden group-hover:inline"
+          />
+        </SidebarPropertyListItem>
 
         <SidebarPropertyListItem icon={DueDatePropertyIcon} label={t("common.order_by.due_date")}>
           <div className="flex w-full items-center gap-2">
@@ -328,6 +356,11 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
         {...dueDateReasonModalProps}
         title={t("common.due_date_change_reason_title")}
         description={t("common.due_date_change_reason_description")}
+      />
+      <ReasonConfirmationModal
+        {...requestedDeliveryDateReasonModalProps}
+        title={t("common.requested_delivery_date_change_reason_title")}
+        description={t("common.requested_delivery_date_change_reason_description")}
       />
     </div>
   );

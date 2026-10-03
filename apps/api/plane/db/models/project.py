@@ -51,7 +51,7 @@ def get_default_props():
         },
         "display_filters": {
             "group_by": None,
-            "order_by": "-created_at",
+            "order_by": "requested_delivery_date",
             "type": None,
             "sub_issue": True,
             "show_empty_groups": True,

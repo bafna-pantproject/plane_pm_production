@@ -61,7 +61,7 @@ def get_default_filters():
 def get_default_display_filters():
     return {
         "group_by": None,
-        "order_by": "-created_at",
+        "order_by": "requested_delivery_date",
         "type": None,
         "sub_issue": False,
         "show_empty_groups": True,

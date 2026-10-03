@@ -191,7 +191,7 @@ const IssueRowDetails = observer(function IssueRowDetails(props: IssueRowDetails
   const [isMenuActive, setIsMenuActive] = useState(false);
   // refs
   const cellRef = useRef(null);
-  const menuActionRef = useRef<HTMLDivElement | null>(null);
+  const menuActionRef = useRef<HTMLButtonElement | null>(null);
   // router
   const { workspaceSlug, projectId } = useParams();
   // hooks
@@ -213,7 +213,8 @@ const IssueRowDetails = observer(function IssueRowDetails(props: IssueRowDetails
   useOutsideClickDetector(menuActionRef, () => setIsMenuActive(false));
 
   const customActionButton = (
-    <div
+    <button
+      type="button"
       ref={menuActionRef}
       className={`flex h-full w-full cursor-pointer items-center rounded-sm p-1 text-placeholder hover:bg-layer-1 ${
         isMenuActive ? "bg-layer-1 text-primary" : "text-secondary"
@@ -221,7 +222,7 @@ const IssueRowDetails = observer(function IssueRowDetails(props: IssueRowDetails
       onClick={() => setIsMenuActive(!isMenuActive)}
     >
       <MoreHorizontal className="h-3.5 w-3.5" />
-    </div>
+    </button>
   );
   if (!issueDetail) return null;
 
@@ -281,6 +282,13 @@ const IssueRowDetails = observer(function IssueRowDetails(props: IssueRowDetails
               }
             )}
           >
+            {/* Order number section - replaces the work item id as the leading identifier */}
+            {displayProperties?.order_number && (
+              <div className="flex h-full min-w-24 flex-shrink-0 items-center pr-2">
+                <span className="truncate text-11 text-tertiary">{issueDetail.order_number}</span>
+              </div>
+            )}
+
             {/* Identifier section - conditionally rendered */}
             {displayProperties?.key && (
               <div className="flex h-full min-w-24 flex-shrink-0 items-center">
@@ -301,8 +309,8 @@ const IssueRowDetails = observer(function IssueRowDetails(props: IssueRowDetails
             {/* Workitem section */}
             <div
               className={cn("flex flex-grow items-center gap-0.5 py-2", {
-                "min-w-[360px]": !displayProperties?.key,
-                "min-w-60": displayProperties?.key,
+                "min-w-[360px]": !displayProperties?.key && !displayProperties?.order_number,
+                "min-w-60": displayProperties?.key || displayProperties?.order_number,
               })}
             >
               {/* select checkbox */}
@@ -370,7 +378,9 @@ const IssueRowDetails = observer(function IssueRowDetails(props: IssueRowDetails
                 </div>
                 <div
                   className={`opacity-0 transition-opacity group-hover:opacity-100 ${isMenuActive ? "!opacity-100" : ""}`}
+                  role="presentation"
                   onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => e.stopPropagation()}
                 >
                   {quickActions({
                     issue: issueDetail,

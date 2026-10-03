@@ -80,6 +80,8 @@ export interface IssueFormProps {
   onQuantityChange: (quantity: number | null) => void;
   selectedRequestedDeliveryDate?: string | null;
   onRequestedDeliveryDateChange?: (date: string | null) => void;
+  orderNumber?: string;
+  onOrderNumberChange?: (orderNumber: string) => void;
 }
 
 export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormProps) {
@@ -112,6 +114,8 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
     onQuantityChange,
     selectedRequestedDeliveryDate = null,
     onRequestedDeliveryDateChange,
+    orderNumber = "",
+    onOrderNumberChange,
   } = props;
 
   // states
@@ -375,7 +379,7 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
     // oxlint-disable-next-line eslint-plugin-react-hooks/exhaustive-deps
   }, [watch, getIssueById, getProjectById, selectedParentIssue, getStateById]);
 
-  // when creating a sub work item, prefill vendor, requested delivery date and vendor promised
+  // when creating a sub work item, prefill vendor, order number, requested delivery date and vendor promised
   // delivery date (target_date) from the parent so users don't have to re-enter them. Only fills
   // fields that are still empty, so anything the user already chose is never overwritten.
   const parentIdForPrefill = watch("parent_id") || undefined;
@@ -390,6 +394,7 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
         if (parentOrderDetail.vendor && !selectedVendorId) onVendorChange?.(parentOrderDetail.vendor);
         if (parentOrderDetail.requested_delivery_date && !selectedRequestedDeliveryDate)
           onRequestedDeliveryDateChange?.(parentOrderDetail.requested_delivery_date);
+        if (parentOrderDetail.order_number && !orderNumber) onOrderNumberChange?.(parentOrderDetail.order_number);
       })
       .catch((error) => console.error(error));
     return () => {
@@ -468,6 +473,8 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
                   workspaceSlug={workspaceSlug?.toString()}
                   selectedVendorId={selectedVendorId}
                   onVendorChange={onVendorChange}
+                  orderNumber={orderNumber}
+                  onOrderNumberChange={onOrderNumberChange}
                 />
               </div>
             </div>
