@@ -159,6 +159,7 @@ class IssueListEndpoint(BaseAPIView):
             .annotate(requested_delivery_date=order_detail_subquery("requested_delivery_date"))
             .annotate(category=order_detail_subquery("category"))
             .annotate(order_number=order_detail_subquery("order_number"))
+            .annotate(quantity=order_detail_subquery("quantity"))
             .distinct()
         )
         issue_queryset = annotate_next_state_target_fields(issue_queryset, project_id)
@@ -218,6 +219,7 @@ class IssueListEndpoint(BaseAPIView):
                 "requested_delivery_date",
                 "category",
                 "order_number",
+                "quantity",
                 "next_state_target_date",
                 "next_state_target_entered_at",
             )
@@ -284,6 +286,7 @@ class IssueViewSet(BaseViewSet):
             .annotate(requested_delivery_date=order_detail_subquery("requested_delivery_date"))
             .annotate(category=order_detail_subquery("category"))
             .annotate(order_number=order_detail_subquery("order_number"))
+            .annotate(quantity=order_detail_subquery("quantity"))
         )
         issues = annotate_next_state_target_fields(issues, self.kwargs.get("project_id"))
 

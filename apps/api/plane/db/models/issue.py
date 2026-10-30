@@ -89,6 +89,7 @@ def get_default_display_properties():
         "category": True,
         "requested_delivery_date": True,
         "order_number": True,
+        "quantity": True,
     }
 
 

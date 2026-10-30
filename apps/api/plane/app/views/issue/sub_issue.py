@@ -135,6 +135,7 @@ class SubIssuesEndpoint(BaseAPIView):
             .annotate(requested_delivery_date=order_detail_subquery("requested_delivery_date"))
             .annotate(category=order_detail_subquery("category"))
             .annotate(order_number=order_detail_subquery("order_number"))
+            .annotate(quantity=order_detail_subquery("quantity"))
         )
 
         # Ordering
@@ -178,6 +179,7 @@ class SubIssuesEndpoint(BaseAPIView):
                 "requested_delivery_date",
                 "category",
                 "order_number",
+                "quantity",
             )
         )
 
@@ -265,6 +267,7 @@ class SubIssuesEndpoint(BaseAPIView):
             "requested_delivery_date",
             "category",
             "order_number",
+            "quantity",
         ]
         order_details = {
             str(row["id"]): row

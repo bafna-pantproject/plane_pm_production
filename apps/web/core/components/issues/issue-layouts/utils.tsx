@@ -10,7 +10,17 @@ import { extractInstruction } from "@atlaskit/pragmatic-drag-and-drop-hitbox/tre
 import { clone, isNil, pull, uniq, concat } from "lodash-es";
 import scrollIntoView from "smooth-scroll-into-view-if-needed";
 import type { FC } from "react";
-import { Barcode, Boxes, Building2, CalendarClock, CalendarDays, Flag, LayersIcon, Paperclip } from "lucide-react";
+import {
+  Barcode,
+  Boxes,
+  Building2,
+  CalendarClock,
+  CalendarDays,
+  Flag,
+  Hash,
+  LayersIcon,
+  Paperclip,
+} from "lucide-react";
 // plane types
 import { EIconSize, ISSUE_PRIORITIES, STATE_GROUPS } from "@plane/constants";
 import { Logo } from "@plane/propel/emoji-icon-picker";
@@ -75,6 +85,7 @@ import {
   SpreadsheetCategoryColumn,
   SpreadsheetRequestedDeliveryDateColumn,
   SpreadsheetOrderNumberColumn,
+  SpreadsheetQuantityColumn,
   SpreadsheetTnaFlagColumn,
 } from "@/components/issues/issue-layouts/spreadsheet/columns";
 
@@ -882,6 +893,7 @@ export const SpreadSheetPropertyIconMap: Record<string, FC<ISvgIcons>> = {
   CalendarClock: CalendarClock,
   Barcode: Barcode,
   Flag: Flag,
+  Hash: Hash,
 };
 
 export const SPREADSHEET_COLUMNS: { [key in keyof IIssueDisplayProperties]: TSpreadsheetColumn } = {
@@ -903,6 +915,7 @@ export const SPREADSHEET_COLUMNS: { [key in keyof IIssueDisplayProperties]: TSpr
   category: SpreadsheetCategoryColumn,
   requested_delivery_date: SpreadsheetRequestedDeliveryDateColumn,
   order_number: SpreadsheetOrderNumberColumn,
+  quantity: SpreadsheetQuantityColumn,
   tna_flag: SpreadsheetTnaFlagColumn,
 };
 

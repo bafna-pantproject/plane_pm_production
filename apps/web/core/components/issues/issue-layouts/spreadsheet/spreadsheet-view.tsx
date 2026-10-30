@@ -4,10 +4,14 @@
  * See the LICENSE file for details.
  */
 
-import React, { useRef } from "react";
+import React, { useCallback, useRef } from "react";
 import { observer } from "mobx-react";
+import { useParams } from "next/navigation";
+import { Download } from "lucide-react";
 // plane constants
 import { SPREADSHEET_SELECT_GROUP, SPREADSHEET_PROPERTY_LIST } from "@plane/constants";
+import { useTranslation } from "@plane/i18n";
+import { Button } from "@plane/propel/button";
 // types
 import type { TIssue, IIssueDisplayFilterOptions, IIssueDisplayProperties } from "@plane/types";
 import { EIssueLayoutTypes } from "@plane/types";
@@ -15,12 +19,14 @@ import { EIssueLayoutTypes } from "@plane/types";
 import { MultipleSelectGroup } from "@/components/core/multiple-select";
 import { IssueBulkOperationsRoot } from "@/components/issues/bulk-operations";
 // hooks
+import { useIssues } from "@/hooks/store/use-issues";
 import { useProject } from "@/hooks/store/use-project";
 import { useBulkOperationStatus } from "@/hooks/use-bulk-operation-status";
 // local imports
 import type { TRenderQuickActions } from "../list/list-view-types";
 import { QuickAddIssueRoot, SpreadsheetAddIssueButton } from "../quick-add";
 import { SpreadsheetTable } from "./spreadsheet-table";
+import { useExportSpreadsheetCsv } from "./use-export-csv";
 
 type Props = {
   displayProperties: IIssueDisplayProperties;
@@ -60,10 +66,16 @@ export const SpreadsheetView = observer(function SpreadsheetView(props: Props) {
   // refs
   const containerRef = useRef<HTMLTableElement | null>(null);
   const portalRef = useRef<HTMLDivElement | null>(null);
+  // router
+  const { workspaceSlug } = useParams();
+  // i18n
+  const { t } = useTranslation();
   // store hooks
   const { currentProjectDetails } = useProject();
+  const { issueMap } = useIssues();
   // plane web hooks
   const isBulkOperationsEnabled = useBulkOperationStatus();
+  const { exportToCsv } = useExportSpreadsheetCsv();
 
   const isEstimateEnabled: boolean = currentProjectDetails?.estimate !== null;
 
@@ -75,10 +87,26 @@ export const SpreadsheetView = observer(function SpreadsheetView(props: Props) {
         return true;
       });
 
+  const handleExportCsv = useCallback(() => {
+    if (!issueIds) return;
+    exportToCsv(
+      issueIds,
+      issueMap,
+      spreadsheetColumnsList,
+      displayProperties,
+      workspaceSlug?.toString() ?? "work-items"
+    );
+  }, [issueIds, issueMap, spreadsheetColumnsList, displayProperties, workspaceSlug, exportToCsv]);
+
   if (!issueIds || issueIds.length === 0) return <></>;
   return (
     <div className="relative flex h-full w-full flex-col overflow-x-hidden bg-layer-1 whitespace-nowrap text-secondary">
       <div ref={portalRef} className="spreadsheet-menu-portal" />
+      <div className="flex items-center justify-end border-b border-subtle px-page-x py-1.5">
+        <Button variant="secondary" size="sm" onClick={handleExportCsv} prependIcon={<Download />}>
+          {t("common.export_to_csv")}
+        </Button>
+      </div>
       <MultipleSelectGroup
         containerRef={containerRef}
         entities={{

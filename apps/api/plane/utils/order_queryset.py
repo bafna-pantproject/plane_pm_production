@@ -36,6 +36,7 @@ ISSUE_ORDER_BY_ALLOWLIST = frozenset({
     "category",
     "requested_delivery_date",
     "order_number",
+    "quantity",
     "next_state_target_date",
 })
 

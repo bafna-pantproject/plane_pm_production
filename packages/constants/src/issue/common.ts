@@ -151,6 +151,7 @@ export const ISSUE_DISPLAY_PROPERTIES_KEYS: (keyof IIssueDisplayProperties)[] = 
   "labels",
   "key",
   "priority",
+  "quantity",
   "state",
   "sub_issue_count",
   "link",
@@ -202,6 +203,10 @@ export const ISSUE_DISPLAY_PROPERTIES: {
     key: "priority",
     titleTranslationKey: "common.priority",
   },
+  {
+    key: "quantity",
+    titleTranslationKey: "common.quantity",
+  },
   { key: "state", titleTranslationKey: "common.state" },
   {
     key: "sub_issue_count",
@@ -226,6 +231,7 @@ export const ISSUE_DISPLAY_PROPERTIES: {
 ];
 
 export const SPREADSHEET_PROPERTY_LIST: (keyof IIssueDisplayProperties)[] = [
+  "quantity",
   "state",
   "requested_delivery_date",
   "due_date",
@@ -241,6 +247,7 @@ export const SPREADSHEET_PROPERTY_LIST: (keyof IIssueDisplayProperties)[] = [
   "sub_issue_count",
   "vendor",
   "category",
+  "order_number",
   "tna_flag",
   "created_on",
   "updated_on",
@@ -419,6 +426,14 @@ export const SPREADSHEET_PROPERTY_DETAILS: {
     descendingOrderKey: "-order_number",
     descendingOrderTitle: "Z",
     icon: "Barcode",
+  },
+  quantity: {
+    i18n_title: "common.quantity",
+    ascendingOrderKey: "-quantity",
+    ascendingOrderTitle: "High",
+    descendingOrderKey: "quantity",
+    descendingOrderTitle: "Low",
+    icon: "Hash",
   },
   tna_flag: {
     i18n_title: "common.tna_flag",

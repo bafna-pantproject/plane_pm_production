@@ -65,6 +65,8 @@ export type TIssueOrderByOptions =
   | "-requested_delivery_date"
   | "order_number"
   | "-order_number"
+  | "quantity"
+  | "-quantity"
   | "next_state_target_date"
   | "-next_state_target_date";
 
@@ -197,6 +199,7 @@ export interface IIssueDisplayProperties {
   category?: boolean;
   requested_delivery_date?: boolean;
   order_number?: boolean;
+  quantity?: boolean;
   tna_flag?: boolean;
 }
 

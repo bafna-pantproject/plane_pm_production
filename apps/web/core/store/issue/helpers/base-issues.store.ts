@@ -183,6 +183,8 @@ const ISSUE_ORDERBY_KEY: Record<TIssueOrderByOptions, keyof TIssue> = {
   "-requested_delivery_date": "requested_delivery_date",
   order_number: "order_number",
   "-order_number": "order_number",
+  quantity: "quantity",
+  "-quantity": "quantity",
   next_state_target_date: "next_state_target_date",
   "-next_state_target_date": "next_state_target_date",
 };
