@@ -6,6 +6,21 @@
 
 export type TStateGroups = "backlog" | "unstarted" | "started" | "completed" | "cancelled";
 
+/** work item fields an admin can require to be filled in before a work item enters a state. */
+export type TStateRequiredField =
+  | "order_number"
+  | "category"
+  | "vendor"
+  | "quantity"
+  | "purchase_order_number"
+  | "fabric_price"
+  | "trims_price"
+  | "fob_price"
+  | "requested_delivery_date"
+  | "target_date"
+  // the TNA plan's target date for one workflow state: `tna_target:<state id>`
+  | `tna_target:${string}`;
+
 export interface IState {
   readonly id: string;
   color: string;
@@ -17,6 +32,7 @@ export interface IState {
   sequence: number;
   workspace_id: string;
   order: number;
+  required_fields: TStateRequiredField[];
 }
 
 export interface IStateLite {

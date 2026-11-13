@@ -62,6 +62,26 @@ DEFAULT_STATES = [
 ]
 
 
+# Work item fields an admin can require to be filled before a work item may enter a state.
+# Order fields live on OrderDetail; target_date is the work item's vendor promised delivery date.
+STATE_REQUIRED_FIELD_KEYS = [
+    "order_number",
+    "category",
+    "vendor",
+    "quantity",
+    "purchase_order_number",
+    "fabric_price",
+    "trims_price",
+    "fob_price",
+    "requested_delivery_date",
+    "target_date",
+]
+
+
+# required-field keys of the form "tna_target:<state id>" ask for the TNA plan's target date for that state
+STATE_REQUIRED_TNA_PREFIX = "tna_target:"
+
+
 class StateManager(SoftDeletionManager):
     """Default manager - excludes triage states"""
 
@@ -89,6 +109,8 @@ class State(ProjectBaseModel):
     )
     is_triage = models.BooleanField(default=False)
     default = models.BooleanField(default=False)
+    # keys from STATE_REQUIRED_FIELD_KEYS that must be filled in before a work item can enter this state
+    required_fields = models.JSONField(default=list, blank=True)
     external_source = models.CharField(max_length=255, null=True, blank=True)
     external_id = models.CharField(max_length=255, blank=True, null=True)
 

@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import type { TStateGroups } from "@plane/types";
+import type { TStateGroups, TStateRequiredField } from "@plane/types";
 
 export type TDraggableData = {
   groupKey: TStateGroups;
@@ -50,6 +50,28 @@ export const STATE_GROUPS: {
     color: "#dc2626",
   },
 };
+
+// fields an admin can require for a state; i18n_label is resolved by the caller
+export const STATE_REQUIRED_FIELDS: { key: TStateRequiredField; i18n_label: string }[] = [
+  { key: "order_number", i18n_label: "common.order_number" },
+  { key: "category", i18n_label: "common.category" },
+  { key: "vendor", i18n_label: "common.vendor" },
+  { key: "quantity", i18n_label: "common.quantity" },
+  { key: "purchase_order_number", i18n_label: "common.purchase_order" },
+  { key: "fabric_price", i18n_label: "common.fabric_price" },
+  { key: "trims_price", i18n_label: "common.trims_price" },
+  { key: "fob_price", i18n_label: "common.fob_price" },
+  { key: "requested_delivery_date", i18n_label: "common.requested_delivery_date" },
+  { key: "target_date", i18n_label: "common.order_by.due_date" },
+];
+
+export const STATE_REQUIRED_TNA_PREFIX = "tna_target:";
+
+export const getTnaRequiredField = (stateId: string): TStateRequiredField => `${STATE_REQUIRED_TNA_PREFIX}${stateId}`;
+
+/** the workflow state whose TNA target date a required-field key asks for, or null for any other key. */
+export const getTnaRequiredFieldStateId = (field: TStateRequiredField): string | null =>
+  field.startsWith(STATE_REQUIRED_TNA_PREFIX) ? field.slice(STATE_REQUIRED_TNA_PREFIX.length) : null;
 
 export const ARCHIVABLE_STATE_GROUPS = [STATE_GROUPS.completed.key, STATE_GROUPS.cancelled.key];
 export const COMPLETED_STATE_GROUPS = [STATE_GROUPS.completed.key];

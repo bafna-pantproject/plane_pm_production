@@ -54,6 +54,8 @@ import type { IMultipleSelectStore } from "./multiple_select.store";
 import { MultipleSelectStore } from "./multiple_select.store";
 import type { IOrderDetailStore } from "./order-detail.store";
 import { OrderDetailStore } from "./order-detail.store";
+import type { IStateTransitionGateStore } from "./state-transition-gate.store";
+import { StateTransitionGateStore } from "./state-transition-gate.store";
 import type { IPurchaseOrderStore } from "./purchase-order.store";
 import { PurchaseOrderStore } from "./purchase-order.store";
 import type { ITaskStateTargetStore } from "./task-state-target.store";
@@ -121,6 +123,7 @@ export class CoreRootStore {
   taskStateTarget: ITaskStateTargetStore;
   issueShipment: IIssueShipmentStore;
   orderDetail: IOrderDetailStore;
+  stateTransitionGate: IStateTransitionGateStore;
 
   constructor() {
     this.router = new RouterStore();
@@ -159,6 +162,7 @@ export class CoreRootStore {
     this.taskStateTarget = new TaskStateTargetStore(this);
     this.issueShipment = new IssueShipmentStore(this);
     this.orderDetail = new OrderDetailStore(this);
+    this.stateTransitionGate = new StateTransitionGateStore(this);
   }
 
   resetOnSignOut() {
@@ -199,6 +203,7 @@ export class CoreRootStore {
     this.taskStateTarget = new TaskStateTargetStore(this);
     this.issueShipment = new IssueShipmentStore(this);
     this.orderDetail = new OrderDetailStore(this);
+    this.stateTransitionGate = new StateTransitionGateStore(this);
   }
 }
 

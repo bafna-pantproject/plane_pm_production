@@ -6,9 +6,15 @@
 
 import { useEffect, useState } from "react";
 import { TwitterPicker } from "react-color";
+import { useParams } from "react-router";
+import { STATE_REQUIRED_FIELDS, getTnaRequiredField } from "@plane/constants";
+import { useTranslation } from "@plane/i18n";
 import { Button } from "@plane/propel/button";
-import type { IState } from "@plane/types";
+import type { IState, TStateRequiredField } from "@plane/types";
 import { Popover, Input, TextArea } from "@plane/ui";
+import { cn } from "@plane/utils";
+// hooks
+import { useProjectState } from "@/hooks/store/use-project-state";
 
 type TStateForm = {
   data: Partial<IState>;
@@ -31,6 +37,10 @@ function PopoverButton({ color }: { color?: string }) {
 
 export function StateForm(props: TStateForm) {
   const { data, onSubmit, onCancel, buttonDisabled, buttonTitle } = props;
+  const { t } = useTranslation();
+  const { projectId } = useParams();
+  const { getProjectStates } = useProjectState();
+  const projectStates = getProjectStates(projectId);
   // states
   const [formData, setFromData] = useState<Partial<IState> | undefined>(undefined);
   const [errors, setErrors] = useState<Partial<Record<keyof IState, string>> | undefined>(undefined);
@@ -42,6 +52,34 @@ export function StateForm(props: TStateForm) {
   const handleFormData = <T extends keyof IState>(key: T, value: IState[T]) => {
     setFromData((prev) => ({ ...prev, [key]: value }));
     setErrors((prev) => ({ ...prev, [key]: "" }));
+  };
+
+  const toggleRequiredField = (field: TStateRequiredField) => {
+    const current = formData?.required_fields ?? [];
+    handleFormData(
+      "required_fields",
+      current.includes(field) ? current.filter((key) => key !== field) : [...current, field]
+    );
+  };
+
+  const renderRequiredFieldChip = (field: TStateRequiredField, label: string) => {
+    const isSelected = (formData?.required_fields ?? []).includes(field);
+    return (
+      <button
+        key={field}
+        type="button"
+        aria-pressed={isSelected}
+        onClick={() => toggleRequiredField(field)}
+        className={cn(
+          "rounded-full border px-2.5 py-1 text-12 transition-colors",
+          isSelected
+            ? "border-accent-strong bg-accent-primary/10 text-accent-primary"
+            : "border-subtle text-secondary hover:bg-layer-1"
+        )}
+      >
+        {label}
+      </button>
+    );
   };
 
   const formSubmit = async (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
@@ -83,6 +121,7 @@ export function StateForm(props: TStateForm) {
           hasError={(errors && Boolean(errors.name)) || false}
           className="w-full"
           maxLength={100}
+          // oxlint-disable-next-line jsx-a11y/no-autofocus
           autoFocus
         />
 
@@ -96,6 +135,25 @@ export function StateForm(props: TStateForm) {
           hasError={(errors && Boolean(errors.description)) || false}
           className="min-h-14 w-full resize-none text-13"
         />
+
+        {/* required fields */}
+        <div className="space-y-1.5">
+          <div>
+            <p className="text-13 font-medium text-secondary">{t("common.state_required_fields")}</p>
+            <p className="text-11 text-tertiary">{t("common.state_required_fields_description")}</p>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {STATE_REQUIRED_FIELDS.map((field) => renderRequiredFieldChip(field.key, t(field.i18n_label)))}
+          </div>
+          {projectStates && projectStates.length > 0 && (
+            <>
+              <p className="pt-1 text-12 font-medium text-secondary">{t("common.state_required_tna_dates")}</p>
+              <div className="flex flex-wrap gap-1.5">
+                {projectStates.map((state) => renderRequiredFieldChip(getTnaRequiredField(state.id), state.name))}
+              </div>
+            </>
+          )}
+        </div>
 
         <div className="flex items-center space-x-2">
           <Button onClick={formSubmit} variant="primary" size="lg" disabled={buttonDisabled}>

@@ -17,7 +17,7 @@ from rest_framework import status
 from .. import BaseViewSet, BaseAPIView
 from plane.app.serializers import StateSerializer
 from plane.app.permissions import ROLE, allow_permission
-from plane.db.models import State, Issue
+from plane.db.models import State, Issue, ProjectMember, WorkspaceMember
 from plane.utils.cache import invalidate_cache
 
 
@@ -42,6 +42,21 @@ class StateViewSet(BaseViewSet):
             .distinct()
         )
 
+    @staticmethod
+    def _is_project_admin(user, slug, project_id):
+        project_member = ProjectMember.objects.filter(
+            member=user, workspace__slug=slug, project_id=project_id, is_active=True
+        )
+        if project_member.filter(role=ROLE.ADMIN.value).exists():
+            return True
+        # workspace admins who belong to the project are treated as project admins, as in allow_permission
+        return (
+            project_member.exists()
+            and WorkspaceMember.objects.filter(
+                member=user, workspace__slug=slug, role=ROLE.ADMIN.value, is_active=True
+            ).exists()
+        )
+
     @invalidate_cache(path="workspaces/:slug/states/", url_params=True, user=False)
     @allow_permission([ROLE.ADMIN])
     def create(self, request, slug, project_id):
@@ -60,6 +75,12 @@ class StateViewSet(BaseViewSet):
 
     @allow_permission([ROLE.ADMIN, ROLE.MEMBER, ROLE.GUEST])
     def partial_update(self, request, slug, project_id, pk):
+        # members and guests may reorder states, but only admins decide what a state requires
+        if "required_fields" in request.data and not self._is_project_admin(request.user, slug, project_id):
+            return Response(
+                {"error": "Only admins can change the required fields of a state"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         try:
             state = State.objects.get(pk=pk, project_id=project_id, workspace__slug=slug)
             serializer = StateSerializer(state, data=request.data, partial=True)

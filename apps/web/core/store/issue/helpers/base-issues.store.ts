@@ -575,6 +575,20 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
     data: Partial<TIssue>,
     shouldSync = true
   ) {
+    // Moving into a state that requires fields the work item lacks opens a popup first;
+    // cancelling leaves the work item where it is, saving merges what was filled into this update.
+    if (shouldSync && data.state_id && data.state_id !== this.rootIssueStore.issues.getIssueById(issueId)?.state_id) {
+      const gate = await this.rootIssueStore.rootStore.stateTransitionGate.ensureRequiredFields(
+        workspaceSlug,
+        projectId,
+        issueId,
+        data.state_id,
+        data
+      );
+      if (!gate.proceed) return;
+      data = { ...data, ...gate.issueData };
+    }
+
     // Store Before state of the issue
     const issueBeforeUpdate = clone(this.rootIssueStore.issues.getIssueById(issueId));
     try {
