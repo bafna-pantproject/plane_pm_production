@@ -371,6 +371,8 @@
   "re_generate_key": "Re-generate key",
   "export": "Export",
   "export_to_csv": "Export to CSV",
+  "export_sub_work_items_to_csv": "Export sub work items",
+  "export_sub_work_items_to_csv_empty": "No sub work items in this view",
   "member": "{count, plural, one{# member} other{# members}}",
   "new_password_must_be_different_from_old_password": "New password must be different from old password",
   "edited": "edited",

@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import React, { useCallback, useRef } from "react";
+import React, { useCallback, useMemo, useRef } from "react";
 import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
 import { Download } from "lucide-react";
@@ -12,6 +12,7 @@ import { Download } from "lucide-react";
 import { SPREADSHEET_SELECT_GROUP, SPREADSHEET_PROPERTY_LIST } from "@plane/constants";
 import { useTranslation } from "@plane/i18n";
 import { Button } from "@plane/propel/button";
+import { Tooltip } from "@plane/propel/tooltip";
 // types
 import type { TIssue, IIssueDisplayFilterOptions, IIssueDisplayProperties } from "@plane/types";
 import { EIssueLayoutTypes } from "@plane/types";
@@ -87,6 +88,12 @@ export const SpreadsheetView = observer(function SpreadsheetView(props: Props) {
         return true;
       });
 
+  // sub work items are the rows that have a parent; this only sees the rows currently loaded in the view
+  const subIssueIds = useMemo(
+    () => (issueIds ?? []).filter((issueId) => !!issueMap[issueId]?.parent_id),
+    [issueIds, issueMap]
+  );
+
   const handleExportCsv = useCallback(() => {
     if (!issueIds) return;
     exportToCsv(
@@ -98,13 +105,36 @@ export const SpreadsheetView = observer(function SpreadsheetView(props: Props) {
     );
   }, [issueIds, issueMap, spreadsheetColumnsList, displayProperties, workspaceSlug, exportToCsv]);
 
+  const handleExportSubIssuesCsv = useCallback(() => {
+    exportToCsv(
+      subIssueIds,
+      issueMap,
+      spreadsheetColumnsList,
+      displayProperties,
+      `${workspaceSlug?.toString() ?? "work-items"}-sub-work-items`
+    );
+  }, [subIssueIds, issueMap, spreadsheetColumnsList, displayProperties, workspaceSlug, exportToCsv]);
+
   if (!issueIds || issueIds.length === 0) return <></>;
   return (
     <div className="relative flex h-full w-full flex-col overflow-x-hidden bg-layer-1 whitespace-nowrap text-secondary">
       <div ref={portalRef} className="spreadsheet-menu-portal" />
-      <div className="flex items-center justify-end border-b border-subtle px-page-x py-1.5">
+      <div className="flex items-center justify-end gap-2 border-b border-subtle px-page-x py-1.5">
+        <Tooltip tooltipContent={t("export_sub_work_items_to_csv_empty")} disabled={subIssueIds.length > 0}>
+          <span>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleExportSubIssuesCsv}
+              disabled={subIssueIds.length === 0}
+              prependIcon={<Download />}
+            >
+              {t("export_sub_work_items_to_csv")}
+            </Button>
+          </span>
+        </Tooltip>
         <Button variant="secondary" size="sm" onClick={handleExportCsv} prependIcon={<Download />}>
-          {t("common.export_to_csv")}
+          {t("export_to_csv")}
         </Button>
       </div>
       <MultipleSelectGroup
