@@ -3,6 +3,7 @@
 # See the LICENSE file for details.
 
 # Django imports
+from django.db import transaction
 from django.db.models import Q, Sum
 from django.db.models.functions import ExtractMonth, ExtractYear
 
@@ -16,6 +17,8 @@ from plane.app.permissions import ROLE, allow_permission
 from plane.app.serializers import (
     IssueShipmentSerializer,
     OrderDetailSerializer,
+    ProductCategorySerializer,
+    ProductFitSerializer,
     PurchaseOrderSerializer,
     StyleSerializer,
     TaskStateTargetSerializer,
@@ -26,6 +29,8 @@ from plane.db.models import (
     Issue,
     IssueShipment,
     OrderDetail,
+    ProductCategory,
+    ProductFit,
     PurchaseOrder,
     State,
     Style,
@@ -186,6 +191,103 @@ class StyleViewSet(BaseViewSet):
     def destroy(self, request, slug, pk):
         style = Style.objects.get(pk=pk, workspace__slug=slug)
         style.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ProductCategoryViewSet(BaseViewSet):
+    serializer_class = ProductCategorySerializer
+    model = ProductCategory
+
+    def get_queryset(self):
+        return self.filter_queryset(
+            super()
+            .get_queryset()
+            .filter(workspace__slug=self.kwargs.get("slug"))
+            .filter(
+                workspace__workspace_member__member=self.request.user,
+                workspace__workspace_member__is_active=True,
+            )
+            .distinct()
+        )
+
+    @allow_permission([ROLE.ADMIN, ROLE.MEMBER], level="WORKSPACE")
+    def create(self, request, slug):
+        workspace_id = Workspace.objects.only("id").get(slug=slug).id
+        serializer = ProductCategorySerializer(data=request.data, context={"workspace_id": workspace_id})
+        if serializer.is_valid():
+            serializer.save(workspace_id=workspace_id)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @allow_permission([ROLE.ADMIN, ROLE.MEMBER], level="WORKSPACE")
+    def partial_update(self, request, slug, pk):
+        category = ProductCategory.objects.get(pk=pk, workspace__slug=slug)
+        old_name = category.name
+        serializer = ProductCategorySerializer(category, data=request.data, partial=True)
+        if serializer.is_valid():
+            with transaction.atomic():
+                serializer.save()
+                # orders store the category as text, so carry a rename over to them
+                if category.name != old_name:
+                    OrderDetail.objects.filter(workspace_id=category.workspace_id, category=old_name).update(
+                        category=category.name
+                    )
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @allow_permission([ROLE.ADMIN], level="WORKSPACE")
+    def destroy(self, request, slug, pk):
+        category = ProductCategory.objects.get(pk=pk, workspace__slug=slug)
+        with transaction.atomic():
+            ProductFit.objects.filter(category=category).delete()
+            category.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ProductFitViewSet(BaseViewSet):
+    serializer_class = ProductFitSerializer
+    model = ProductFit
+
+    def get_queryset(self):
+        return self.filter_queryset(
+            super()
+            .get_queryset()
+            .filter(workspace__slug=self.kwargs.get("slug"), category__deleted_at__isnull=True)
+            .filter(
+                workspace__workspace_member__member=self.request.user,
+                workspace__workspace_member__is_active=True,
+            )
+            .distinct()
+        )
+
+    @allow_permission([ROLE.ADMIN, ROLE.MEMBER], level="WORKSPACE")
+    def create(self, request, slug):
+        workspace_id = Workspace.objects.only("id").get(slug=slug).id
+        serializer = ProductFitSerializer(data=request.data, context={"workspace_id": workspace_id})
+        if serializer.is_valid():
+            serializer.save(workspace_id=workspace_id)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @allow_permission([ROLE.ADMIN, ROLE.MEMBER], level="WORKSPACE")
+    def partial_update(self, request, slug, pk):
+        fit = ProductFit.objects.select_related("category").get(pk=pk, workspace__slug=slug)
+        old_name = fit.name
+        serializer = ProductFitSerializer(fit, data=request.data, partial=True)
+        if serializer.is_valid():
+            with transaction.atomic():
+                serializer.save()
+                # orders store the fit as text, so carry a rename over to them
+                if fit.name != old_name:
+                    OrderDetail.objects.filter(
+                        workspace_id=fit.workspace_id, category=fit.category.name, fit=old_name
+                    ).update(fit=fit.name)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @allow_permission([ROLE.ADMIN], level="WORKSPACE")
+    def destroy(self, request, slug, pk):
+        ProductFit.objects.get(pk=pk, workspace__slug=slug).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 

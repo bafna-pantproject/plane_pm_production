@@ -66,6 +66,7 @@ DEFAULT_STATES = [
 # Order fields live on OrderDetail; target_date is the work item's vendor promised delivery date.
 STATE_REQUIRED_FIELD_KEYS = [
     "order_number",
+    "fit",
     "category",
     "vendor",
     "quantity",

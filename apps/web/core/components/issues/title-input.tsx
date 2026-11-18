@@ -11,7 +11,7 @@ import type { TNameDescriptionLoader } from "@plane/types";
 // components
 import { TextArea } from "@plane/ui";
 // types
-import { cn } from "@plane/utils";
+import { formatFitCategory, cn } from "@plane/utils";
 import useDebounce from "@/hooks/use-debounce";
 import { useOrderDetail } from "@/hooks/store/use-order-detail";
 import { useVendor } from "@/hooks/store/use-vendor";
@@ -123,6 +123,7 @@ export const IssueTitleInput = observer(function IssueTitleInput(props: IssueTit
         textarea.removeEventListener("blur", handleBlur);
       }
     };
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [title, isSubmitting, setIsSubmitting]);
 
   // Save on unmount if there are unsaved changes
@@ -164,7 +165,7 @@ export const IssueTitleInput = observer(function IssueTitleInput(props: IssueTit
       <div className={cn("flex flex-wrap items-baseline gap-x-6 gap-y-1 px-3", containerClassName)}>
         <div className="flex items-baseline gap-1.5">
           <span className="text-13 font-medium text-secondary">{t("common.category")}:</span>
-          <span className="text-20 font-medium">{orderDetail.category}</span>
+          <span className="text-20 font-medium">{formatFitCategory(orderDetail.fit, orderDetail.category)}</span>
         </div>
         <div className="flex items-baseline gap-1.5">
           <span className="text-13 font-medium text-secondary">{t("common.vendor")}:</span>
@@ -172,9 +173,7 @@ export const IssueTitleInput = observer(function IssueTitleInput(props: IssueTit
         </div>
         <div className="flex items-baseline gap-1.5">
           <span className="text-13 font-medium text-secondary">{t("common.quantity")}:</span>
-          <span className="text-20 font-medium">
-            {orderDetail.quantity ? `${orderDetail.quantity} units` : "—"}
-          </span>
+          <span className="text-20 font-medium">{orderDetail.quantity ? `${orderDetail.quantity} units` : "—"}</span>
         </div>
       </div>
     );

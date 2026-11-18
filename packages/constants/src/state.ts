@@ -54,6 +54,7 @@ export const STATE_GROUPS: {
 // fields an admin can require for a state; i18n_label is resolved by the caller
 export const STATE_REQUIRED_FIELDS: { key: TStateRequiredField; i18n_label: string }[] = [
   { key: "order_number", i18n_label: "common.order_number" },
+  { key: "fit", i18n_label: "common.fit" },
   { key: "category", i18n_label: "common.category" },
   { key: "vendor", i18n_label: "common.vendor" },
   { key: "quantity", i18n_label: "common.quantity" },

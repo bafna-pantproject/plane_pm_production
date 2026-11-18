@@ -23,6 +23,7 @@ import type { TIssue, TWorkspaceDraftIssue } from "@plane/types";
 import { ToggleSwitch } from "@plane/ui";
 import {
   composeOrderDetailName,
+  formatFitCategory,
   convertWorkItemDataToSearchResponse,
   getUpdateFormDataForReset,
   cn,
@@ -51,7 +52,6 @@ import { useProjectIssueProperties } from "@/hooks/use-project-issue-properties"
 
 export interface IssueFormProps {
   data?: Partial<TIssue>;
-  categoryInputRef: React.MutableRefObject<HTMLInputElement | null>;
   isCreateMoreToggleEnabled: boolean;
   onAssetUpload: (assetId: string) => void;
   onCreateMoreToggleChange: (value: boolean) => void;
@@ -74,8 +74,10 @@ export interface IssueFormProps {
   dataResetProperties?: any[];
   selectedVendorId?: string | null;
   onVendorChange?: (vendorId: string | null) => void;
+  fit: string;
   category: string;
   quantity: number | null;
+  onFitChange: (fit: string) => void;
   onCategoryChange: (category: string) => void;
   onQuantityChange: (quantity: number | null) => void;
   selectedRequestedDeliveryDate?: string | null;
@@ -88,7 +90,6 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
   const { t } = useTranslation();
   const {
     data,
-    categoryInputRef,
     onAssetUpload,
     onChange,
     onClose,
@@ -108,8 +109,10 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
     dataResetProperties = [],
     selectedVendorId = null,
     onVendorChange,
+    fit,
     category,
     quantity,
+    onFitChange,
     onCategoryChange,
     onQuantityChange,
     selectedRequestedDeliveryDate = null,
@@ -229,11 +232,11 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
   // pre-filled from the existing OrderDetail when editing (see base.tsx's fetchIssueDetail).
   const vendorNameForDerivedName = selectedVendorId ? getVendorById(selectedVendorId)?.name : undefined;
   useEffect(() => {
-    const derivedName = composeOrderDetailName(category, vendorNameForDerivedName, quantity);
+    const derivedName = composeOrderDetailName(formatFitCategory(fit, category), vendorNameForDerivedName, quantity);
     if (!derivedName) return;
     setValue("name", derivedName, { shouldDirty: true, shouldValidate: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category, quantity, vendorNameForDerivedName]);
+  }, [fit, category, quantity, vendorNameForDerivedName]);
 
   useEffect(() => {
     if (workItemTemplateId && editorRef.current) {
@@ -461,11 +464,12 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
               )}
               <div className="space-y-1">
                 <IssueCategoryQuantityInput
+                  fit={fit}
                   category={category}
                   quantity={quantity}
+                  onFitChange={onFitChange}
                   onCategoryChange={onCategoryChange}
                   onQuantityChange={onQuantityChange}
-                  categoryInputRef={categoryInputRef}
                   handleFormChange={handleFormChange}
                   categoryError={categoryError}
                   quantityError={quantityError}

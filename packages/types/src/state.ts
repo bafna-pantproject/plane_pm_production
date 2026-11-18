@@ -9,6 +9,7 @@ export type TStateGroups = "backlog" | "unstarted" | "started" | "completed" | "
 /** work item fields an admin can require to be filled in before a work item enters a state. */
 export type TStateRequiredField =
   | "order_number"
+  | "fit"
   | "category"
   | "vendor"
   | "quantity"

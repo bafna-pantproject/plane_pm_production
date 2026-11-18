@@ -33,6 +33,7 @@ import { useLabel } from "@/hooks/store/use-label";
 import { useMember } from "@/hooks/store/use-member";
 import { useModule } from "@/hooks/store/use-module";
 import { useOrderDetail } from "@/hooks/store/use-order-detail";
+import { useProductMaster } from "@/hooks/store/use-product-master";
 import { useProject } from "@/hooks/store/use-project";
 import { useProjectState } from "@/hooks/store/use-project-state";
 import { useProjectView } from "@/hooks/store/use-project-view";
@@ -70,6 +71,7 @@ export const ProjectAuthWrapper = observer(function ProjectAuthWrapper(props: IP
   const { getProjectEstimates } = useProjectEstimates();
   const { fetchWorkspaceVendors } = useVendor();
   const { fetchWorkspaceStyles } = useStyle();
+  const { fetchProductMaster } = useProductMaster();
   const { fetchWorkspacePurchaseOrders } = usePurchaseOrder();
   const { fetchProjectOrderDetails, fetchProjectOrderDetailCategories } = useOrderDetail();
   // derived values
@@ -149,6 +151,10 @@ export const ProjectAuthWrapper = observer(function ProjectAuthWrapper(props: IP
     revalidateOnFocus: false,
   });
   useSWR(`WORKSPACE_STYLES_${workspaceSlug}`, () => fetchWorkspaceStyles(workspaceSlug), {
+    revalidateIfStale: false,
+    revalidateOnFocus: false,
+  });
+  useSWR(`WORKSPACE_PRODUCT_MASTER_${workspaceSlug}`, () => fetchProductMaster(workspaceSlug), {
     revalidateIfStale: false,
     revalidateOnFocus: false,
   });

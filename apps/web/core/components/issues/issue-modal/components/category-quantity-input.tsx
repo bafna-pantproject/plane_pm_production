@@ -12,20 +12,22 @@ import { useTranslation } from "@plane/i18n";
 // ui
 import { Input } from "@plane/ui";
 // helpers
-import { getTabIndex } from "@plane/utils";
+import { cn, getTabIndex } from "@plane/utils";
 // components
 import { CatalogSelect } from "@/components/issues/issue-detail/catalog-select";
+import { FitCategorySelect } from "@/components/product-master/fit-category-select";
 // hooks
 import { useVendor } from "@/hooks/store/use-vendor";
 import { usePlatformOS } from "@/hooks/use-platform-os";
 
 type TIssueCategoryQuantityInputProps = {
+  fit: string;
   category: string;
   quantity: number | null;
+  onFitChange: (value: string) => void;
   onCategoryChange: (value: string) => void;
   onQuantityChange: (value: number | null) => void;
   handleFormChange: () => void;
-  categoryInputRef: React.MutableRefObject<HTMLInputElement | null>;
   categoryError?: string;
   quantityError?: string;
   // category is fixed once a work item exists; vendor and quantity stay editable
@@ -41,12 +43,13 @@ export const IssueCategoryQuantityInput = observer(function IssueCategoryQuantit
   props: TIssueCategoryQuantityInputProps
 ) {
   const {
+    fit,
     category,
     quantity,
+    onFitChange,
     onCategoryChange,
     onQuantityChange,
     handleFormChange,
-    categoryInputRef,
     categoryError,
     quantityError,
     isCategoryDisabled = false,
@@ -65,24 +68,21 @@ export const IssueCategoryQuantityInput = observer(function IssueCategoryQuantit
 
   return (
     <div className="flex gap-3">
-      <div className="flex-1">
-        <Input
-          id="category"
-          name="category"
-          type="text"
-          value={category}
-          onChange={(e) => {
-            onCategoryChange(e.target.value);
+      <div className="flex-1 self-start pt-0.5">
+        <FitCategorySelect
+          workspaceSlug={workspaceSlug}
+          fit={fit}
+          category={category}
+          onChange={(value) => {
+            onFitChange(value.fit);
+            onCategoryChange(value.category);
             handleFormChange();
           }}
-          ref={categoryInputRef}
-          hasError={Boolean(categoryError)}
-          placeholder={t("common.category")}
-          className="w-full text-body-sm-regular"
-          // oxlint-disable-next-line jsx_a11y/no-autofocus
-          autoFocus={!isCategoryDisabled}
-          disabled={isCategoryDisabled}
-          tabIndex={getIndex("category")}
+          isCategoryDisabled={isCategoryDisabled}
+          selectClassName={cn(
+            "min-w-0 flex-1 rounded-sm border",
+            categoryError ? "border-danger-strong" : "border-strong"
+          )}
         />
         <span className="text-caption-sm-medium text-danger-primary">{categoryError}</span>
       </div>

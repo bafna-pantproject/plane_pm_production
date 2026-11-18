@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { Banknote, Barcode, Boxes, Building2, CalendarClock, Hash, Receipt, Tag } from "lucide-react";
+import { Banknote, Barcode, Boxes, Building2, CalendarClock, Hash, Receipt, Shirt, Tag } from "lucide-react";
 import { observer } from "mobx-react";
 import { useEffect, useState } from "react";
 // i18n
@@ -26,6 +26,7 @@ import { Input } from "@plane/ui";
 import {
   cn,
   composeOrderDetailName,
+  formatFitCategory,
   getDate,
   renderFormattedPayloadDate,
   shouldHighlightIssueDueDate,
@@ -50,6 +51,8 @@ import useDebounce from "@/hooks/use-debounce";
 // components
 import { IssueParentSelectRoot } from "@/components/issues/parent-select-root";
 import { SidebarPropertyListItem } from "@/components/common/layout/sidebar/property-list-item";
+import { FitCategorySelect } from "@/components/product-master/fit-category-select";
+import type { TFitCategoryValue } from "@/components/product-master/fit-category-select";
 import { useDateChangeReason } from "@/hooks/use-date-change-reason";
 import { CatalogSelect } from "./catalog-select";
 import { IssueCycleSelect } from "./cycle-select";
@@ -114,13 +117,19 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
   // work items that use category/vendor/quantity display that composite as their name
   // wherever the app just shows the plain title (kanban/list/calendar boards); keep it in
   // sync when category, vendor or quantity change here too, not just from the create/edit modal.
-  const syncDerivedName = (overrides: { category?: string; vendorId?: string | null; quantity?: number | null }) => {
+  const syncDerivedName = (overrides: {
+    fit?: string;
+    category?: string;
+    vendorId?: string | null;
+    quantity?: number | null;
+  }) => {
     const category = "category" in overrides ? overrides.category : orderDetail?.category;
     if (!category) return;
+    const fit = "fit" in overrides ? overrides.fit : orderDetail?.fit;
     const vendorId = "vendorId" in overrides ? overrides.vendorId : orderDetail?.vendor;
     const quantity = "quantity" in overrides ? overrides.quantity : orderDetail?.quantity;
     const vendorName = vendorId ? getVendorById(vendorId)?.name : undefined;
-    const derivedName = composeOrderDetailName(category, vendorName, quantity);
+    const derivedName = composeOrderDetailName(formatFitCategory(fit, category), vendorName, quantity);
     if (derivedName) issueOperations.update(workspaceSlug, projectId, issueId, { name: derivedName });
   };
 
@@ -146,23 +155,10 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedOrderNumberInput]);
 
-  // local editable copy of category, since it's free-typed rather than picked from a
-  // dropdown; debounced and synced back from the store like the issue title input.
-  const [categoryInput, setCategoryInput] = useState(orderDetail?.category ?? "");
-  const debouncedCategoryInput = useDebounce(categoryInput, 800);
-
-  useEffect(() => {
-    setCategoryInput(orderDetail?.category ?? "");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orderDetail?.category]);
-
-  useEffect(() => {
-    const trimmedCategory = debouncedCategoryInput.trim();
-    if (trimmedCategory === (orderDetail?.category ?? "")) return;
-    updateOrderDetail({ category: trimmedCategory });
-    syncDerivedName({ category: trimmedCategory });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedCategoryInput]);
+  const handleFitCategoryChange = (value: TFitCategoryValue) => {
+    updateOrderDetail({ fit: value.fit, category: value.category });
+    syncDerivedName({ fit: value.fit, category: value.category });
+  };
 
   // local editable copy of quantity, since it's free-typed rather than picked from a
   // dropdown; debounced and synced back from the store like the issue title input.
@@ -379,16 +375,23 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
               />
             </SidebarPropertyListItem>
 
-            <SidebarPropertyListItem icon={Boxes} label={t("common.category")}>
-              <Input
-                type="text"
-                value={categoryInput}
-                onChange={(e) => setCategoryInput(e.target.value)}
-                disabled={!isEditable}
-                placeholder={t("common.category")}
-                className="h-7.5 w-full grow border-none bg-transparent text-body-xs-regular"
-              />
-            </SidebarPropertyListItem>
+            <FitCategorySelect
+              workspaceSlug={workspaceSlug}
+              fit={orderDetail?.fit ?? ""}
+              category={orderDetail?.category ?? ""}
+              onChange={handleFitCategoryChange}
+              disabled={!isEditable}
+              selectClassName="w-full grow"
+              renderField={(field, select) => (
+                <SidebarPropertyListItem
+                  key={field}
+                  icon={field === "fit" ? Shirt : Boxes}
+                  label={t(field === "fit" ? "common.fit" : "common.category")}
+                >
+                  {select}
+                </SidebarPropertyListItem>
+              )}
+            />
 
             <SidebarPropertyListItem icon={Building2} label={t("common.vendor")}>
               <CatalogSelect

@@ -90,6 +90,53 @@ class Style(WorkspaceBaseModel):
         return str(self.code)
 
 
+class ProductCategory(WorkspaceBaseModel):
+    """Product master, top level, e.g. "T-Shirts". Work items keep the category as text
+    (OrderDetail.category); renaming one here rewrites that text on the orders using it."""
+
+    name = models.CharField(max_length=255)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["workspace", "name"],
+                condition=Q(deleted_at__isnull=True),
+                name="product_category_unique_workspace_name_when_not_deleted",
+            )
+        ]
+        verbose_name = "Product Category"
+        verbose_name_plural = "Product Categories"
+        db_table = "product_categories"
+        ordering = ("name",)
+
+    def __str__(self):
+        return str(self.name)
+
+
+class ProductFit(WorkspaceBaseModel):
+    """Product master, under a category, e.g. "Slim Fit". Kept on work items as text in
+    OrderDetail.fit, like the category."""
+
+    category = models.ForeignKey(ProductCategory, on_delete=models.CASCADE, related_name="fits")
+    name = models.CharField(max_length=255)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["category", "name"],
+                condition=Q(deleted_at__isnull=True),
+                name="product_fit_unique_category_name_when_not_deleted",
+            )
+        ]
+        verbose_name = "Product Fit"
+        verbose_name_plural = "Product Fits"
+        db_table = "product_fits"
+        ordering = ("name",)
+
+    def __str__(self):
+        return str(self.name)
+
+
 class PurchaseOrder(WorkspaceBaseModel):
     po_number = models.CharField(max_length=100)
     vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE, related_name="purchase_orders")
@@ -116,6 +163,8 @@ class PurchaseOrder(WorkspaceBaseModel):
 class OrderDetail(ProjectBaseModel):
     issue = models.OneToOneField("db.Issue", on_delete=models.CASCADE, related_name="order_detail")
     order_number = models.CharField(max_length=255, blank=True)
+    # fit and category are picked from the product master but stored as text
+    fit = models.CharField(max_length=255, blank=True)
     category = models.CharField(max_length=255, blank=True)
     quantity = models.PositiveIntegerField(null=True, blank=True, validators=[MinValueValidator(1)])
     vendor = models.ForeignKey(

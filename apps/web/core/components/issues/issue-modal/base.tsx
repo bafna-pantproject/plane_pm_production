@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { isEqual, xor } from "lodash-es";
 import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
@@ -59,7 +59,6 @@ export const CreateUpdateIssueModalBase = observer(function CreateUpdateIssueMod
     storeType = EIssuesStoreType.PROJECT;
   }
   // ref
-  const categoryInputRef = useRef<HTMLInputElement>(null);
   // states
   const [changesMade, setChangesMade] = useState<Partial<TIssue> | null>(null);
   const [createMore, setCreateMore] = useState(false);
@@ -68,6 +67,7 @@ export const CreateUpdateIssueModalBase = observer(function CreateUpdateIssueMod
   const [uploadedAssetIds, setUploadedAssetIds] = useState<string[]>([]);
   const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
   const [selectedVendorId, setSelectedVendorId] = useState<string | null>(null);
+  const [selectedFit, setSelectedFit] = useState<string>("");
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [selectedQuantity, setSelectedQuantity] = useState<number | null>(null);
   const [selectedRequestedDeliveryDate, setSelectedRequestedDeliveryDate] = useState<string | null>(null);
@@ -98,6 +98,7 @@ export const CreateUpdateIssueModalBase = observer(function CreateUpdateIssueMod
     if (!projectId || issueId === undefined || !fetchIssueDetails) {
       // Set description to the issue description from the props if available
       setDescription(data?.description_html || "<p></p>");
+      setSelectedFit("");
       setSelectedCategory(data?.name ?? "");
       setSelectedQuantity(null);
       setSelectedVendorId(null);
@@ -111,6 +112,7 @@ export const CreateUpdateIssueModalBase = observer(function CreateUpdateIssueMod
     const orderDetail = await fetchIssueOrderDetail(workspaceSlug.toString(), projectId.toString(), issueId);
     // legacy work items predate category/quantity and have no OrderDetail.category yet;
     // fall back to the existing title so it carries forward instead of being silently discarded
+    setSelectedFit(orderDetail?.fit ?? "");
     setSelectedCategory(orderDetail?.category || response?.name || data?.name || "");
     setSelectedQuantity(orderDetail?.quantity ?? null);
     setSelectedVendorId(orderDetail?.vendor ?? null);
@@ -260,6 +262,7 @@ export const CreateUpdateIssueModalBase = observer(function CreateUpdateIssueMod
       // doesn't clobber what a sub-issue's parent may have just trickled down onto it (see trickle_down_order_details_to_new_sub_issue).
       if (response.id && response.project_id) {
         await updateIssueOrderDetail(workspaceSlug.toString(), response.project_id, response.id, {
+          fit: selectedFit,
           category: selectedCategory,
           quantity: selectedQuantity,
           ...(selectedVendorId ? { vendor: selectedVendorId } : {}),
@@ -281,10 +284,10 @@ export const CreateUpdateIssueModalBase = observer(function CreateUpdateIssueMod
         ),
       });
       if (!createMore) handleClose();
-      if (createMore && categoryInputRef) categoryInputRef?.current?.focus();
       setDescription("<p></p>");
       setChangesMade(null);
       setSelectedVendorId(null);
+      setSelectedFit("");
       setSelectedCategory("");
       setSelectedQuantity(null);
       setSelectedRequestedDeliveryDate(null);
@@ -369,6 +372,7 @@ export const CreateUpdateIssueModalBase = observer(function CreateUpdateIssueMod
       else if (updateIssue) await updateIssue(payload.project_id, data.id, payload);
 
       await updateIssueOrderDetail(workspaceSlug.toString(), payload.project_id, data.id, {
+        fit: selectedFit,
         category: selectedCategory,
         quantity: selectedQuantity,
         vendor: selectedVendorId,
@@ -438,7 +442,6 @@ export const CreateUpdateIssueModalBase = observer(function CreateUpdateIssueMod
   if (!allowedProjectIds || allowedProjectIds.length === 0 || !activeProjectId) return null;
 
   const commonIssueModalProps: IssueFormProps = {
-    categoryInputRef: categoryInputRef,
     data: {
       ...data,
       description_html: description,
@@ -460,8 +463,10 @@ export const CreateUpdateIssueModalBase = observer(function CreateUpdateIssueMod
     isProjectSelectionDisabled: isProjectSelectionDisabled,
     selectedVendorId: selectedVendorId,
     onVendorChange: setSelectedVendorId,
+    fit: selectedFit,
     category: selectedCategory,
     quantity: selectedQuantity,
+    onFitChange: setSelectedFit,
     onCategoryChange: setSelectedCategory,
     onQuantityChange: setSelectedQuantity,
     selectedRequestedDeliveryDate: selectedRequestedDeliveryDate,

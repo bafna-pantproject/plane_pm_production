@@ -11,7 +11,12 @@ import { ISSUE_PRIORITIES, SPREADSHEET_PROPERTY_DETAILS } from "@plane/constants
 import { useTranslation } from "@plane/i18n";
 import type { IIssueDisplayProperties, TIssue, TIssueMap } from "@plane/types";
 import { EEstimateSystem } from "@plane/types";
-import { convertMinutesToHoursMinutesString, getTnaFlagSeverity, renderFormattedDate } from "@plane/utils";
+import {
+  convertMinutesToHoursMinutesString,
+  formatFitCategory,
+  getTnaFlagSeverity,
+  renderFormattedDate,
+} from "@plane/utils";
 // hooks
 import { useProjectEstimates } from "@/hooks/store/estimates";
 import { useCycle } from "@/hooks/store/use-cycle";
@@ -100,7 +105,7 @@ export const useExportSpreadsheetCsv = () => {
         case "vendor":
           return getVendorById(issue.vendor_id ?? "")?.name ?? "";
         case "category":
-          return issue.category ?? "";
+          return formatFitCategory(issue.fit, issue.category);
         case "order_number":
           return issue.order_number ?? "";
         case "quantity":

@@ -6,6 +6,7 @@
 
 export const ISSUE_FORM_TAB_INDICES = [
   "name",
+  "fit",
   "category",
   "order_number",
   "quantity",

@@ -13,7 +13,12 @@ import { Button } from "@plane/propel/button";
 import { TOAST_TYPE, setToast } from "@plane/propel/toast";
 import type { TIssue, TOrderDetail, TStateRequiredField } from "@plane/types";
 import { EModalPosition, EModalWidth, Input, ModalCore } from "@plane/ui";
-import { composeOrderDetailName, renderFormattedDate, renderFormattedPayloadDate } from "@plane/utils";
+import {
+  composeOrderDetailName,
+  formatFitCategory,
+  renderFormattedDate,
+  renderFormattedPayloadDate,
+} from "@plane/utils";
 // components
 import { DateDropdown } from "@/components/dropdowns/date";
 // hooks
@@ -27,6 +32,7 @@ import { escapeHtml } from "@/hooks/use-date-change-reason";
 // store
 import type { TPendingStateTransition } from "@/store/state-transition-gate.store";
 // local components
+import { FitCategorySelect } from "@/components/product-master/fit-category-select";
 import { CatalogSelect } from "./catalog-select";
 
 type TFieldValues = Partial<Record<TStateRequiredField, string | null>>;
@@ -125,11 +131,15 @@ const StateRequiredFieldsForm = observer(function StateRequiredFieldsForm(props:
           .catch((error: unknown) => console.error("Error posting TNA plan comment:", error));
       }
 
-      // work items named after their category/vendor/quantity keep that name in sync, as the sidebar does
-      if ("category" in orderDetailPatch || "vendor" in orderDetailPatch || "quantity" in orderDetailPatch) {
+      // work items named after their fit/category/vendor/quantity keep that name in sync, as the sidebar does
+      if (["fit", "category", "vendor", "quantity"].some((key) => key in orderDetailPatch)) {
         const detail = getOrderDetailByIssueId(issueId);
         const vendorName = detail?.vendor ? getVendorById(detail.vendor)?.name : undefined;
-        const derivedName = composeOrderDetailName(detail?.category, vendorName, detail?.quantity);
+        const derivedName = composeOrderDetailName(
+          formatFitCategory(detail?.fit, detail?.category),
+          vendorName,
+          detail?.quantity
+        );
         if (detail?.category && derivedName) issueData.name = derivedName;
       }
 
@@ -146,6 +156,27 @@ const StateRequiredFieldsForm = observer(function StateRequiredFieldsForm(props:
   };
 
   const renderInput = (field: TStateRequiredField, label: string) => {
+    if (field === "fit" || field === "category") {
+      // both come from the product master, and a fit only exists inside its category
+      const savedDetail = getOrderDetailByIssueId(issueId);
+      const isFitMissing = missingFields.includes("fit");
+      const isCategoryMissing = missingFields.includes("category");
+      return (
+        <FitCategorySelect
+          workspaceSlug={workspaceSlug}
+          fit={values.fit ?? savedDetail?.fit ?? ""}
+          category={values.category ?? savedDetail?.category ?? ""}
+          onChange={(value) => {
+            if (isFitMissing) setValue("fit", value.fit);
+            if (isCategoryMissing) setValue("category", value.category);
+          }}
+          disabled={isSaving}
+          isCategoryDisabled={!isCategoryMissing}
+          selectClassName="w-full rounded-sm border border-strong"
+          renderField={(selectField, select) => (selectField === field ? select : null)}
+        />
+      );
+    }
     if (field === "vendor")
       return (
         <CatalogSelect

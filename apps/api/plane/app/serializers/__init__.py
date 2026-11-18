@@ -50,6 +50,8 @@ from .order import (
     VendorSerializer,
     VendorCapacitySerializer,
     StyleSerializer,
+    ProductCategorySerializer,
+    ProductFitSerializer,
     PurchaseOrderSerializer,
     OrderDetailSerializer,
     TaskStateTargetSerializer,

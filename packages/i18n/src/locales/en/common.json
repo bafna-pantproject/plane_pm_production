@@ -481,6 +481,7 @@
     "shipments_added": "Logged {quantity} shipped.",
     "reason_placeholder": "Add a reason for this change",
     "state_required_fields": "Required fields",
+    "select_category_first": "Pick a category first",
     "state_required_tna_dates": "TNA target dates",
     "state_required_tna_date_label": "TNA target date: {state}",
     "state_required_fields_description": "Work items must have these fields filled in before they can move into this state.",
@@ -746,6 +747,7 @@
       "higher_subscription": "Upgrade to higher subscription",
       "talk_to_sales": "Talk to Sales"
     },
+    "fit": "Fit",
     "category": "Category",
     "categories": "Categories",
     "quantity": "Quantity",

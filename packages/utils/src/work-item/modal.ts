@@ -9,6 +9,10 @@ import { set } from "lodash-es";
 import { DEFAULT_WORK_ITEM_FORM_VALUES } from "@plane/constants";
 import type { IPartialProject, ISearchIssueResponse, IState, TIssue } from "@plane/types";
 
+/** fit and category shown as one value, e.g. "Slim Fit T-Shirts" (either may be blank). */
+export const formatFitCategory = (fit: string | null | undefined, category: string | null | undefined): string =>
+  [fit?.trim(), category?.trim()].filter(Boolean).join(" ");
+
 // Work items are identified by category/vendor/quantity instead of a free-form title.
 // Every place that can change one of those 3 values (the create/edit modal, the issue
 // detail sidebar's vendor dropdown) recomputes the work item's name with this so the

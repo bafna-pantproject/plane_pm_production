@@ -13,6 +13,8 @@ from plane.app.views import (
     IssueStateTargetsEndpoint,
     ProjectOrderDetailCategoriesEndpoint,
     ProjectOrderDetailsEndpoint,
+    ProductCategoryViewSet,
+    ProductFitViewSet,
     PurchaseOrderViewSet,
     StyleViewSet,
     VendorCapacityDetailEndpoint,
@@ -56,6 +58,26 @@ urlpatterns = [
         "workspaces/<str:slug>/styles/<uuid:pk>/",
         StyleViewSet.as_view({"get": "retrieve", "patch": "partial_update", "delete": "destroy"}),
         name="workspace-style",
+    ),
+    path(
+        "workspaces/<str:slug>/product-categories/",
+        ProductCategoryViewSet.as_view({"get": "list", "post": "create"}),
+        name="workspace-product-category",
+    ),
+    path(
+        "workspaces/<str:slug>/product-categories/<uuid:pk>/",
+        ProductCategoryViewSet.as_view({"get": "retrieve", "patch": "partial_update", "delete": "destroy"}),
+        name="workspace-product-category",
+    ),
+    path(
+        "workspaces/<str:slug>/product-fits/",
+        ProductFitViewSet.as_view({"get": "list", "post": "create"}),
+        name="workspace-product-fit",
+    ),
+    path(
+        "workspaces/<str:slug>/product-fits/<uuid:pk>/",
+        ProductFitViewSet.as_view({"get": "retrieve", "patch": "partial_update", "delete": "destroy"}),
+        name="workspace-product-fit",
     ),
     path(
         "workspaces/<str:slug>/purchase-orders/",

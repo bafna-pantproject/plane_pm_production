@@ -41,6 +41,21 @@ export interface TStyle {
   is_active: boolean;
 }
 
+/** product master, top level, e.g. "T-Shirts" */
+export interface TProductCategory {
+  readonly id: string;
+  workspace_id: string;
+  name: string;
+}
+
+/** product master, under a category, e.g. "Slim Fit" */
+export interface TProductFit {
+  readonly id: string;
+  workspace_id: string;
+  category: string;
+  name: string;
+}
+
 export interface TPurchaseOrder {
   readonly id: string;
   workspace_id: string;
@@ -56,6 +71,8 @@ export interface TOrderDetail {
   project_id: string;
   readonly issue: string;
   order_number: string;
+  // fit and category are picked from the product master but stored as text
+  fit: string;
   category: string;
   quantity: number | null;
   vendor: string | null;

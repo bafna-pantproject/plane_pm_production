@@ -90,6 +90,8 @@ from .order import (
     VendorCapacityDetailEndpoint,
     VendorCapacityUsageEndpoint,
     StyleViewSet,
+    ProductCategoryViewSet,
+    ProductFitViewSet,
     PurchaseOrderViewSet,
     IssueStateTargetsEndpoint,
     IssueStateTargetDetailEndpoint,

@@ -133,6 +133,7 @@ def issue_on_results(
         "style_id",
         "purchase_order_number",
         "requested_delivery_date",
+        "fit",
         "category",
         "order_number",
         "quantity",

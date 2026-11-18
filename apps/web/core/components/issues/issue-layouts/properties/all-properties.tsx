@@ -18,6 +18,7 @@ import { Tooltip } from "@plane/propel/tooltip";
 import type { TIssue, IIssueDisplayProperties, TIssuePriorities } from "@plane/types";
 // ui
 import {
+  formatFitCategory,
   cn,
   getDate,
   getTnaFlagSeverity,
@@ -551,21 +552,23 @@ export const IssueProperties = observer(function IssueProperties(props: IIssuePr
         </div>
       </WithDisplayPropertiesHOC>
 
-      {/* category - free text, read-only here; edited from the create/edit modal */}
+      {/* fit + category shown as one value, read-only here; edited from the create/edit modal and sidebar */}
       <WithDisplayPropertiesHOC
         displayProperties={displayProperties}
         displayPropertyKey="category"
-        shouldRenderProperty={() => !!issue.category}
+        shouldRenderProperty={() => !!issue.category || !!issue.fit}
       >
         <Tooltip
           tooltipHeading={t("common.category")}
-          tooltipContent={issue.category ?? ""}
+          tooltipContent={formatFitCategory(issue.fit, issue.category)}
           isMobile={isMobile}
           renderByDefault={false}
         >
           <div className="flex h-5 flex-shrink-0 items-center justify-center gap-2 overflow-hidden rounded-sm border-[0.5px] border-strong px-2.5 py-1">
             <Boxes className="h-3 w-3 flex-shrink-0" strokeWidth={2} />
-            <div className="max-w-24 truncate text-caption-sm-regular">{issue.category}</div>
+            <div className="max-w-32 truncate text-caption-sm-regular">
+              {formatFitCategory(issue.fit, issue.category)}
+            </div>
           </div>
         </Tooltip>
       </WithDisplayPropertiesHOC>

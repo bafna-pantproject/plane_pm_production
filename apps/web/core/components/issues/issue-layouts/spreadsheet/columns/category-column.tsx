@@ -6,6 +6,7 @@
 
 import React from "react";
 import { observer } from "mobx-react";
+import { formatFitCategory } from "@plane/utils";
 // types
 import type { TIssue } from "@plane/types";
 
@@ -16,13 +17,13 @@ type Props = {
   disabled: boolean;
 };
 
-// free text, read-only here; edited from the issue sidebar, matching the kanban card treatment.
+// fit + category shown as one value, read-only here; edited from the issue sidebar, matching the kanban card treatment.
 export const SpreadsheetCategoryColumn = observer(function SpreadsheetCategoryColumn(props: Props) {
   const { issue } = props;
 
   return (
     <div className="flex h-11 items-center border-b-[0.5px] border-subtle px-page-x">
-      <span className="truncate text-13">{issue.category}</span>
+      <span className="truncate text-13">{formatFitCategory(issue.fit, issue.category)}</span>
     </div>
   );
 });

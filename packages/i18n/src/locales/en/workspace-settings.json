@@ -150,6 +150,34 @@
           }
         }
       },
+      "product_master": {
+        "title": "Product master",
+        "heading": "Product master",
+        "description": "Category > Fit > Style > Size. Categories and their fits listed here are what work items pick from.",
+        "add_category": "Add category",
+        "category_placeholder": "Category name, e.g. T-Shirts",
+        "add_fit": "Add fit",
+        "fit_placeholder": "Fit name, e.g. Slim Fit",
+        "no_fits": "No fits yet",
+        "fits_count": "{count, plural, one {# fit} other {# fits}}",
+        "empty_state": {
+          "title": "No categories yet",
+          "description": "Add a category, then the fits that belong to it."
+        },
+        "delete_category_confirm": {
+          "title": "Delete category",
+          "description": "Delete \"{name}\" and its fits? Work items that already use it keep their text, but it can't be picked again. This can't be undone."
+        },
+        "delete_fit_confirm": {
+          "title": "Delete fit",
+          "description": "Delete fit \"{name}\"? Work items that already use it keep their text, but it can't be picked again. This can't be undone."
+        },
+        "toasts": {
+          "saved": "Product master updated",
+          "deleted": "Deleted",
+          "error": "Couldn't save the change. Please try again."
+        }
+      },
       "vendors": {
         "heading": "Vendors",
         "description": "Manage the vendors you work with. Vendors created here are available to attach to any work item in this workspace.",
