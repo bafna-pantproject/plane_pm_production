@@ -35,10 +35,13 @@ export interface TVendorCapacityUsage {
 export interface TStyle {
   readonly id: string;
   workspace_id: string;
+  /** the style id */
   code: string;
   name: string;
   description: string;
   is_active: boolean;
+  /** product master fit this style sits under (category > fit > style), if any */
+  fit: string | null;
 }
 
 /** product master, top level, e.g. "T-Shirts" */

@@ -19,6 +19,8 @@ export interface IStyleStore {
   styleMap: Record<string, TStyle>;
   workspaceStyles: TStyle[] | undefined;
   getStyleById: (styleId: string) => TStyle | null;
+  getStyleByCode: (code: string) => TStyle | null;
+  getFitStyles: (fitId: string | null | undefined) => TStyle[];
   fetchWorkspaceStyles: (workspaceSlug: string) => Promise<TStyle[]>;
   createStyle: (workspaceSlug: string, data: Partial<TStyle>) => Promise<TStyle>;
   updateStyle: (workspaceSlug: string, styleId: string, data: Partial<TStyle>) => Promise<TStyle>;
@@ -53,6 +55,20 @@ export class StyleStore implements IStyleStore {
   }
 
   getStyleById = computedFn((styleId: string): TStyle | null => this.styleMap?.[styleId] ?? null);
+
+  getStyleByCode = computedFn((code: string): TStyle | null => {
+    const target = code.trim().toLowerCase();
+    return Object.values(this.styleMap).find((style) => style.code.toLowerCase() === target) ?? null;
+  });
+
+  getFitStyles = computedFn((fitId: string | null | undefined): TStyle[] =>
+    fitId
+      ? Object.values(this.styleMap)
+          .filter((style) => style.fit === fitId)
+          // oxlint-disable-next-line unicorn/no-array-sort
+          .sort((a, b) => a.code.localeCompare(b.code))
+      : []
+  );
 
   fetchWorkspaceStyles = async (workspaceSlug: string) =>
     await this.styleService.getStyles(workspaceSlug).then((response) => {

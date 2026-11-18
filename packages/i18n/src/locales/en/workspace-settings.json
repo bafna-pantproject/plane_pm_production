@@ -153,12 +153,17 @@
       "product_master": {
         "title": "Product master",
         "heading": "Product master",
-        "description": "Category > Fit > Style > Size. Categories and their fits listed here are what work items pick from.",
+        "description": "Category > Fit > Style. Work items pick their fit and category from here, and sub work items pick a style from the fit they belong to.",
         "add_category": "Add category",
         "category_placeholder": "Category name, e.g. T-Shirts",
         "add_fit": "Add fit",
         "fit_placeholder": "Fit name, e.g. Slim Fit",
         "no_fits": "No fits yet",
+        "add_style": "Add style",
+        "style_placeholder": "Style id, e.g. TS-1042",
+        "no_styles": "No styles yet",
+        "styles_count": "{count, plural, one {# style} other {# styles}}",
+        "remove_style": "Remove from this fit",
         "fits_count": "{count, plural, one {# fit} other {# fits}}",
         "empty_state": {
           "title": "No categories yet",
@@ -166,11 +171,11 @@
         },
         "delete_category_confirm": {
           "title": "Delete category",
-          "description": "Delete \"{name}\" and its fits? Work items that already use it keep their text, but it can't be picked again. This can't be undone."
+          "description": "Delete \"{name}\" and its fits? Work items that already use it keep their text, but it can't be picked again. Its styles are kept, just no longer under a fit. This can't be undone."
         },
         "delete_fit_confirm": {
           "title": "Delete fit",
-          "description": "Delete fit \"{name}\"? Work items that already use it keep their text, but it can't be picked again. This can't be undone."
+          "description": "Delete fit \"{name}\"? Work items that already use it keep their text, but it can't be picked again. Its styles are kept, just no longer under a fit. This can't be undone."
         },
         "toasts": {
           "saved": "Product master updated",

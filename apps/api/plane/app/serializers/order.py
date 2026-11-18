@@ -60,8 +60,27 @@ class VendorCapacitySerializer(BaseSerializer):
 class StyleSerializer(BaseSerializer):
     class Meta:
         model = Style
-        fields = ["id", "workspace_id", "code", "name", "description", "is_active"]
+        fields = ["id", "workspace_id", "code", "name", "description", "is_active", "fit"]
         read_only_fields = ["workspace"]
+
+    def _workspace_id(self):
+        return self.instance.workspace_id if self.instance else self.context.get("workspace_id")
+
+    def validate_code(self, value):
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError("Style code is required.")
+        duplicates = Style.objects.filter(workspace_id=self._workspace_id(), code__iexact=value)
+        if self.instance:
+            duplicates = duplicates.exclude(pk=self.instance.pk)
+        if duplicates.exists():
+            raise serializers.ValidationError("A style with this code already exists.")
+        return value
+
+    def validate_fit(self, value):
+        if value is not None and value.workspace_id != self._workspace_id():
+            raise serializers.ValidationError("Fit not found.")
+        return value
 
 
 class ProductCategorySerializer(BaseSerializer):

@@ -68,8 +68,11 @@ class VendorCapacity(WorkspaceBaseModel):
 
 
 class Style(WorkspaceBaseModel):
+    # the style id; unique across the workspace
     code = models.CharField(max_length=100)
     name = models.CharField(max_length=255, blank=True)
+    # product master: category > fit > style. Optional, since styles predate the product master.
+    fit = models.ForeignKey("db.ProductFit", on_delete=models.SET_NULL, null=True, blank=True, related_name="styles")
     description = models.TextField(blank=True)
     is_active = models.BooleanField(default=True)
 

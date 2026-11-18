@@ -27,7 +27,6 @@ import {
   cn,
   composeOrderDetailName,
   formatFitCategory,
-  formatStyleLabel,
   getDate,
   renderFormattedPayloadDate,
   shouldHighlightIssueDueDate,
@@ -53,6 +52,7 @@ import useDebounce from "@/hooks/use-debounce";
 import { IssueParentSelectRoot } from "@/components/issues/parent-select-root";
 import { SidebarPropertyListItem } from "@/components/common/layout/sidebar/property-list-item";
 import { FitCategorySelect } from "@/components/product-master/fit-category-select";
+import { StyleSelect } from "@/components/product-master/style-select";
 import type { TFitCategoryValue } from "@/components/product-master/fit-category-select";
 import { useDateChangeReason } from "@/hooks/use-date-change-reason";
 import { CatalogSelect } from "./catalog-select";
@@ -86,7 +86,7 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
   const { getUserDetails } = useMember();
   const { getStateById } = useProjectState();
   const { workspaceVendors, createVendor, getVendorById } = useVendor();
-  const { workspaceStyles, createStyle, getStyleById } = useStyle();
+  const { getStyleById } = useStyle();
   const { getOrderDetailByIssueId, fetchIssueOrderDetail, updateIssueOrderDetail } = useOrderDetail();
   const orderDetail = getOrderDetailByIssueId(issueId);
 
@@ -431,17 +431,17 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
             </SidebarPropertyListItem>
 
             <SidebarPropertyListItem icon={Tag} label={t("common.style")}>
-              <CatalogSelect
+              <StyleSelect
                 className="w-full grow"
+                workspaceSlug={workspaceSlug}
+                fit={orderDetail?.fit ?? ""}
+                category={orderDetail?.category ?? ""}
                 value={orderDetail?.style}
                 onChange={(val) => {
                   updateOrderDetail({ style: val });
                   syncDerivedName({ styleId: val });
                 }}
-                options={(workspaceStyles ?? []).map((style) => ({ id: style.id, label: formatStyleLabel(style) }))}
-                placeholder={t("common.style")}
                 disabled={!isEditable}
-                onCreate={isEditable ? (name) => createStyle(workspaceSlug, { code: name, name }) : undefined}
               />
             </SidebarPropertyListItem>
 

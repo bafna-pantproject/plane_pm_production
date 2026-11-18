@@ -24,6 +24,7 @@ export interface IProductMasterStore {
   getCategoryById: (categoryId: string) => TProductCategory | null;
   getCategoryByName: (name: string | null | undefined) => TProductCategory | null;
   getCategoryFits: (categoryId: string | null | undefined) => TProductFit[];
+  getFitByName: (categoryName: string | null | undefined, fitName: string | null | undefined) => TProductFit | null;
   fetchProductMaster: (workspaceSlug: string) => Promise<void>;
   createCategory: (workspaceSlug: string, data: Partial<TProductCategory>) => Promise<TProductCategory>;
   updateCategory: (workspaceSlug: string, categoryId: string, data: Partial<TProductCategory>) => Promise<void>;
@@ -81,6 +82,16 @@ export class ProductMasterStore implements IProductMasterStore {
           // oxlint-disable-next-line unicorn/no-array-sort
           .sort(byName)
       : []
+  );
+
+  // work items store fit and category as text; a fit name is only unique within its category
+  getFitByName = computedFn(
+    (categoryName: string | null | undefined, fitName: string | null | undefined): TProductFit | null => {
+      const category = this.getCategoryByName(categoryName);
+      const target = fitName?.trim().toLowerCase();
+      if (!category || !target) return null;
+      return this.getCategoryFits(category.id).find((fit) => fit.name.toLowerCase() === target) ?? null;
+    }
   );
 
   fetchProductMaster = async (workspaceSlug: string) => {

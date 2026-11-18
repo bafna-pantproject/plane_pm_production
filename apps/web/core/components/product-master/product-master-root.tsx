@@ -16,6 +16,7 @@ import type { TProductCategory, TProductFit } from "@plane/types";
 import { AlertModalCore, Input, Loader } from "@plane/ui";
 // hooks
 import { useProductMaster } from "@/hooks/store/use-product-master";
+import { useStyle } from "@/hooks/store/use-style";
 // local imports
 import { ProductCategoryItem } from "./category-item";
 
@@ -36,6 +37,7 @@ export const ProductMasterRoot = observer(function ProductMasterRoot(props: Prop
   const { workspaceSlug, isEditable } = props;
   const { t } = useTranslation();
   const { workspaceCategories, fetchProductMaster, createCategory, deleteCategory, deleteFit } = useProductMaster();
+  const { fetchWorkspaceStyles } = useStyle();
   // states
   const [newCategoryName, setNewCategoryName] = useState("");
   const [isCreating, setIsCreating] = useState(false);
@@ -45,6 +47,11 @@ export const ProductMasterRoot = observer(function ProductMasterRoot(props: Prop
   const { isLoading } = useSWR(
     workspaceSlug ? `WORKSPACE_PRODUCT_MASTER_${workspaceSlug}` : null,
     workspaceSlug ? () => fetchProductMaster(workspaceSlug) : null,
+    { revalidateIfStale: false, revalidateOnFocus: false }
+  );
+  useSWR(
+    workspaceSlug ? `WORKSPACE_STYLES_${workspaceSlug}` : null,
+    workspaceSlug ? () => fetchWorkspaceStyles(workspaceSlug) : null,
     { revalidateIfStale: false, revalidateOnFocus: false }
   );
 
@@ -75,6 +82,8 @@ export const ProductMasterRoot = observer(function ProductMasterRoot(props: Prop
     try {
       if (pendingDelete.kind === "category") await deleteCategory(workspaceSlug, pendingDelete.item.id);
       else await deleteFit(workspaceSlug, pendingDelete.item.id);
+      // the server unlinks the styles under a deleted fit/category, so refetch them
+      void fetchWorkspaceStyles(workspaceSlug);
       setToast({ type: TOAST_TYPE.SUCCESS, title: t("workspace_settings.settings.product_master.toasts.deleted") });
       setPendingDelete(null);
     } catch (error) {

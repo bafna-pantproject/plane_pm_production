@@ -12,9 +12,10 @@ import { useTranslation } from "@plane/i18n";
 import { Tooltip } from "@plane/propel/tooltip";
 import type { TProductCategory, TProductFit } from "@plane/types";
 import { Input } from "@plane/ui";
-import { cn } from "@plane/utils";
+import { cn, formatStyleLabel } from "@plane/utils";
 // hooks
 import { useProductMaster } from "@/hooks/store/use-product-master";
+import { useStyle } from "@/hooks/store/use-style";
 
 const iconButtonClassName =
   "grid place-items-center rounded-sm p-1.5 text-tertiary hover:bg-layer-1 hover:text-primary";
@@ -64,7 +65,7 @@ function EditableName(props: TEditableNameProps) {
   );
 }
 
-type TFitChipProps = {
+type TFitRowProps = {
   workspaceSlug: string;
   fit: TProductFit;
   isEditable: boolean;
@@ -72,46 +73,142 @@ type TFitChipProps = {
   onDelete: (fit: TProductFit) => void;
 };
 
-const FitChip = observer(function FitChip(props: TFitChipProps) {
+/** one fit inside a category, with the styles that sit under it */
+const FitRow = observer(function FitRow(props: TFitRowProps) {
   const { workspaceSlug, fit, isEditable, onError, onDelete } = props;
   const { t } = useTranslation();
   const { updateFit } = useProductMaster();
+  const { getFitStyles, getStyleByCode, createStyle, updateStyle } = useStyle();
+  // states
   const [isRenaming, setIsRenaming] = useState(false);
+  const [newStyleCode, setNewStyleCode] = useState("");
+  const [isAddingStyle, setIsAddingStyle] = useState(false);
+  // derived values
+  const styles = getFitStyles(fit.id);
 
-  if (isRenaming)
-    return (
-      <EditableName
-        name={fit.name}
-        onCancel={() => setIsRenaming(false)}
-        onSave={async (name) => {
-          try {
-            await updateFit(workspaceSlug, fit.id, { name });
-            setIsRenaming(false);
-          } catch (error) {
-            onError(error);
-          }
-        }}
-      />
-    );
+  const handleAddStyle = async () => {
+    const code = newStyleCode.trim();
+    if (!code || isAddingStyle) return;
+    setIsAddingStyle(true);
+    try {
+      // a style id is unique across the workspace, so an existing one is moved under this fit instead
+      const existing = getStyleByCode(code);
+      if (existing) await updateStyle(workspaceSlug, existing.id, { fit: fit.id });
+      else await createStyle(workspaceSlug, { code, name: code, fit: fit.id });
+      setNewStyleCode("");
+    } catch (error) {
+      onError(error);
+    } finally {
+      setIsAddingStyle(false);
+    }
+  };
+
+  const handleRemoveStyle = async (styleId: string) => {
+    try {
+      await updateStyle(workspaceSlug, styleId, { fit: null });
+    } catch (error) {
+      onError(error);
+    }
+  };
 
   return (
-    <span className="group/fit inline-flex items-center gap-1 rounded-full border border-subtle bg-layer-1 py-0.5 pr-1 pl-2.5 text-12 text-secondary">
-      {fit.name}
+    <div className="space-y-2 rounded-sm border-[0.5px] border-subtle px-3 py-2">
+      <div className="group/fit flex items-center justify-between gap-2">
+        {isRenaming ? (
+          <EditableName
+            name={fit.name}
+            onCancel={() => setIsRenaming(false)}
+            onSave={async (name) => {
+              try {
+                await updateFit(workspaceSlug, fit.id, { name });
+                setIsRenaming(false);
+              } catch (error) {
+                onError(error);
+              }
+            }}
+          />
+        ) : (
+          <div className="flex min-w-0 items-center gap-2">
+            <span className="truncate text-body-xs-medium text-primary">{fit.name}</span>
+            <span className="flex-shrink-0 rounded-sm bg-layer-1 px-1.5 py-0.5 text-11 text-tertiary">
+              {t("workspace_settings.settings.product_master.styles_count", { count: styles.length })}
+            </span>
+          </div>
+        )}
+        {isEditable && !isRenaming && (
+          <div className="flex flex-shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover/fit:opacity-100">
+            <Tooltip tooltipContent={t("common.edit")}>
+              <button type="button" className={iconButtonClassName} onClick={() => setIsRenaming(true)}>
+                <Pencil className="h-3 w-3" />
+              </button>
+            </Tooltip>
+            <Tooltip tooltipContent={t("common.delete")}>
+              <button
+                type="button"
+                className={cn(iconButtonClassName, "hover:text-danger-primary")}
+                onClick={() => onDelete(fit)}
+              >
+                <Trash2 className="h-3 w-3" />
+              </button>
+            </Tooltip>
+          </div>
+        )}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-1.5">
+        {styles.length > 0 ? (
+          styles.map((style) => (
+            <span
+              key={style.id}
+              className="group/style inline-flex items-center gap-1 rounded-full border border-subtle bg-layer-1 py-0.5 pr-1 pl-2.5 text-12 text-secondary"
+            >
+              {formatStyleLabel(style)}
+              {isEditable && (
+                <Tooltip tooltipContent={t("workspace_settings.settings.product_master.remove_style")}>
+                  <button
+                    type="button"
+                    className="rounded-sm p-0.5 opacity-0 transition-opacity group-hover/style:opacity-100 hover:text-danger-primary"
+                    onClick={() => void handleRemoveStyle(style.id)}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </Tooltip>
+              )}
+            </span>
+          ))
+        ) : (
+          <span className="text-body-xs-regular text-placeholder">
+            {t("workspace_settings.settings.product_master.no_styles")}
+          </span>
+        )}
+      </div>
+
       {isEditable && (
-        <span className="flex items-center opacity-0 transition-opacity group-hover/fit:opacity-100">
-          <Tooltip tooltipContent={t("common.edit")}>
-            <button type="button" className="rounded-sm p-0.5 hover:text-primary" onClick={() => setIsRenaming(true)}>
-              <Pencil className="h-3 w-3" />
-            </button>
-          </Tooltip>
-          <Tooltip tooltipContent={t("common.delete")}>
-            <button type="button" className="rounded-sm p-0.5 hover:text-danger-primary" onClick={() => onDelete(fit)}>
-              <X className="h-3 w-3" />
-            </button>
-          </Tooltip>
-        </span>
+        <form
+          className="flex items-center gap-2"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void handleAddStyle();
+          }}
+        >
+          <Input
+            value={newStyleCode}
+            onChange={(event) => setNewStyleCode(event.target.value)}
+            placeholder={t("workspace_settings.settings.product_master.style_placeholder")}
+            className="h-7 w-56 text-body-xs-regular"
+            disabled={isAddingStyle}
+          />
+          <button
+            type="submit"
+            className="flex items-center gap-1 rounded-sm px-1.5 py-1 text-caption-sm-medium text-accent-primary hover:bg-layer-1 disabled:cursor-not-allowed disabled:text-placeholder"
+            disabled={!newStyleCode.trim() || isAddingStyle}
+          >
+            <Plus className="h-3 w-3" />
+            {t("workspace_settings.settings.product_master.add_style")}
+          </button>
+        </form>
       )}
-    </span>
+    </div>
   );
 });
 
@@ -210,10 +307,10 @@ export const ProductCategoryItem = observer(function ProductCategoryItem(props: 
 
       {isExpanded && (
         <div className="space-y-3 border-t-[0.5px] border-subtle px-4 py-3 pl-11">
-          <div className="flex flex-wrap items-center gap-1.5">
+          <div className="flex flex-col gap-2">
             {fits.length > 0 ? (
               fits.map((fit) => (
-                <FitChip
+                <FitRow
                   key={fit.id}
                   workspaceSlug={workspaceSlug}
                   fit={fit}

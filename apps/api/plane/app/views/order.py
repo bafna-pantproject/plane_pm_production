@@ -172,9 +172,10 @@ class StyleViewSet(BaseViewSet):
 
     @allow_permission([ROLE.ADMIN, ROLE.MEMBER], level="WORKSPACE")
     def create(self, request, slug):
-        serializer = StyleSerializer(data=request.data)
+        workspace_id = Workspace.objects.only("id").get(slug=slug).id
+        serializer = StyleSerializer(data=request.data, context={"workspace_id": workspace_id})
         if serializer.is_valid():
-            serializer.save(workspace_id=Workspace.objects.only("id").get(slug=slug).id)
+            serializer.save(workspace_id=workspace_id)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -239,6 +240,8 @@ class ProductCategoryViewSet(BaseViewSet):
     def destroy(self, request, slug, pk):
         category = ProductCategory.objects.get(pk=pk, workspace__slug=slug)
         with transaction.atomic():
+            # styles stay (sub work items point at them), they just stop belonging to a fit
+            Style.objects.filter(fit__category=category).update(fit=None)
             ProductFit.objects.filter(category=category).delete()
             category.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -287,7 +290,11 @@ class ProductFitViewSet(BaseViewSet):
 
     @allow_permission([ROLE.ADMIN], level="WORKSPACE")
     def destroy(self, request, slug, pk):
-        ProductFit.objects.get(pk=pk, workspace__slug=slug).delete()
+        fit = ProductFit.objects.get(pk=pk, workspace__slug=slug)
+        with transaction.atomic():
+            # styles stay (sub work items point at them), they just stop belonging to a fit
+            Style.objects.filter(fit=fit).update(fit=None)
+            fit.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 

@@ -17,6 +17,7 @@ from plane.db.models import (
     ProductCategory,
     ProductFit,
     Project,
+    Style,
     ProjectMember,
     State,
     User,
@@ -28,6 +29,7 @@ CATEGORIES_URL = "/api/workspaces/{slug}/product-categories/"
 CATEGORY_URL = "/api/workspaces/{slug}/product-categories/{pk}/"
 FITS_URL = "/api/workspaces/{slug}/product-fits/"
 FIT_URL = "/api/workspaces/{slug}/product-fits/{pk}/"
+STYLES_URL = "/api/workspaces/{slug}/styles/"
 ISSUE_ORDER_DETAIL_URL = "/api/workspaces/{slug}/projects/{project_id}/issues/{issue_id}/order-detail/"
 
 
@@ -183,3 +185,52 @@ class TestOrderDetailFit:
         assert response.status_code == status.HTTP_200_OK, response.data
         assert response.data["fit"] == "Slim Fit"
         assert response.data["category"] == "T-Shirts"
+
+
+@pytest.mark.contract
+class TestStylesUnderFits:
+    @pytest.fixture
+    def fit(self, workspace, category):
+        return ProductFit.objects.create(workspace=workspace, category=category, name="Slim Fit")
+
+    @pytest.mark.django_db
+    def test_admin_can_create_a_style_under_a_fit(self, session_client, workspace, fit):
+        response = session_client.post(
+            STYLES_URL.format(slug=workspace.slug), {"code": "TS-1042", "name": "TS-1042", "fit": str(fit.id)}, format="json"
+        )
+        assert response.status_code == status.HTTP_201_CREATED, response.data
+        assert str(response.data["fit"]) == str(fit.id)
+
+    @pytest.mark.django_db
+    def test_style_code_is_unique_per_workspace(self, session_client, workspace, fit):
+        Style.objects.create(workspace=workspace, code="TS-1042")
+        response = session_client.post(STYLES_URL.format(slug=workspace.slug), {"code": "ts-1042"}, format="json")
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    @pytest.mark.django_db
+    def test_cannot_put_a_style_under_another_workspaces_fit(self, session_client, workspace, create_user):
+        other = Workspace.objects.create(name="Other", owner=create_user, slug="other-workspace")
+        other_category = ProductCategory.objects.create(workspace=other, name="Jeans")
+        foreign_fit = ProductFit.objects.create(workspace=other, category=other_category, name="Slim Fit")
+        response = session_client.post(
+            STYLES_URL.format(slug=workspace.slug), {"code": "TS-1042", "fit": str(foreign_fit.id)}, format="json"
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    @pytest.mark.django_db
+    def test_deleting_a_fit_keeps_its_styles_but_unlinks_them(self, session_client, workspace, fit):
+        style = Style.objects.create(workspace=workspace, code="TS-1042", fit=fit)
+        response = session_client.delete(FIT_URL.format(slug=workspace.slug, pk=fit.id))
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+        style.refresh_from_db()
+        assert style.deleted_at is None
+        assert style.fit_id is None
+
+    @pytest.mark.django_db
+    def test_deleting_a_category_unlinks_the_styles_under_its_fits(self, session_client, workspace, category, fit):
+        style = Style.objects.create(workspace=workspace, code="TS-1042", fit=fit)
+        response = session_client.delete(CATEGORY_URL.format(slug=workspace.slug, pk=category.id))
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+        style.refresh_from_db()
+        assert style.deleted_at is None
+        assert style.fit_id is None

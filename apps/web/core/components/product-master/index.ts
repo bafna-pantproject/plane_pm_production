@@ -7,3 +7,4 @@
 export * from "./product-master-root";
 export * from "./category-item";
 export * from "./fit-category-select";
+export * from "./style-select";

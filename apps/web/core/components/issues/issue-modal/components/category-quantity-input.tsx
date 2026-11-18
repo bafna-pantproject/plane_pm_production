@@ -12,12 +12,12 @@ import { useTranslation } from "@plane/i18n";
 // ui
 import { Input } from "@plane/ui";
 // helpers
-import { cn, formatFitCategory, formatStyleLabel, getTabIndex } from "@plane/utils";
+import { cn, formatFitCategory, getTabIndex } from "@plane/utils";
 // components
 import { CatalogSelect } from "@/components/issues/issue-detail/catalog-select";
 import { FitCategorySelect } from "@/components/product-master/fit-category-select";
+import { StyleSelect } from "@/components/product-master/style-select";
 // hooks
-import { useStyle } from "@/hooks/store/use-style";
 import { useVendor } from "@/hooks/store/use-vendor";
 import { usePlatformOS } from "@/hooks/use-platform-os";
 
@@ -73,7 +73,6 @@ export const IssueCategoryQuantityInput = observer(function IssueCategoryQuantit
   const { isMobile } = usePlatformOS();
   const { t } = useTranslation();
   const { workspaceVendors, createVendor } = useVendor();
-  const { workspaceStyles, createStyle } = useStyle();
 
   const { getIndex } = getTabIndex(ETabIndices.ISSUE_FORM, isMobile);
 
@@ -81,15 +80,15 @@ export const IssueCategoryQuantityInput = observer(function IssueCategoryQuantit
     <div className="flex gap-3">
       {isSubWorkItem ? (
         <div className="flex-1 self-start pt-0.5">
-          <CatalogSelect
+          <StyleSelect
+            workspaceSlug={workspaceSlug}
+            fit={fit}
+            category={category}
             value={styleId}
             onChange={(value) => {
               onStyleChange?.(value);
               handleFormChange();
             }}
-            options={(workspaceStyles ?? []).map((style) => ({ id: style.id, label: formatStyleLabel(style) }))}
-            placeholder={t("common.style")}
-            onCreate={(name) => createStyle(workspaceSlug, { code: name, name })}
             className={cn("w-full rounded-sm border", styleError ? "border-danger-strong" : "border-strong")}
           />
           <span className="text-caption-sm-medium text-danger-primary">{styleError}</span>
