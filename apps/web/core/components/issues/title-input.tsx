@@ -11,9 +11,11 @@ import type { TNameDescriptionLoader } from "@plane/types";
 // components
 import { TextArea } from "@plane/ui";
 // types
-import { formatFitCategory, cn } from "@plane/utils";
+import { formatFitCategory, formatStyleLabel, cn } from "@plane/utils";
 import useDebounce from "@/hooks/use-debounce";
 import { useOrderDetail } from "@/hooks/store/use-order-detail";
+import { useIssueDetail } from "@/hooks/store/use-issue-detail";
+import { useStyle } from "@/hooks/store/use-style";
 import { useVendor } from "@/hooks/store/use-vendor";
 import type { TIssueOperations } from "./issue-detail";
 // hooks
@@ -57,6 +59,10 @@ export const IssueTitleInput = observer(function IssueTitleInput(props: IssueTit
   // order detail (category/vendor/quantity) hooks
   const { getOrderDetailByIssueId, fetchIssueOrderDetail } = useOrderDetail();
   const { getVendorById } = useVendor();
+  const { getStyleById } = useStyle();
+  const {
+    issue: { getIssueById },
+  } = useIssueDetail();
   const orderDetail = getOrderDetailByIssueId(issueId);
 
   // the project-wide bulk fetch (project-wrapper.tsx) may not have completed yet when this
@@ -159,13 +165,22 @@ export const IssueTitleInput = observer(function IssueTitleInput(props: IssueTit
   // work items that have been through the category/vendor/quantity form (i.e. every work
   // item created or edited since that change shipped) show those 3 values instead of the
   // free-form title. Legacy/generic work items with no category set yet keep the title.
-  if (orderDetail?.category) {
-    const vendor = orderDetail.vendor ? getVendorById(orderDetail.vendor) : null;
+  // sub work items are identified by their style rather than the category they share with the parent
+  const subWorkItemStyle =
+    getIssueById(issueId)?.parent_id && orderDetail?.style ? getStyleById(orderDetail.style) : null;
+  if (orderDetail?.category || subWorkItemStyle) {
+    const vendor = orderDetail?.vendor ? getVendorById(orderDetail.vendor) : null;
     return (
       <div className={cn("flex flex-wrap items-baseline gap-x-6 gap-y-1 px-3", containerClassName)}>
         <div className="flex items-baseline gap-1.5">
-          <span className="text-13 font-medium text-secondary">{t("common.category")}:</span>
-          <span className="text-20 font-medium">{formatFitCategory(orderDetail.fit, orderDetail.category)}</span>
+          <span className="text-13 font-medium text-secondary">
+            {subWorkItemStyle ? t("common.style") : t("common.category")}:
+          </span>
+          <span className="text-20 font-medium">
+            {subWorkItemStyle
+              ? formatStyleLabel(subWorkItemStyle)
+              : formatFitCategory(orderDetail?.fit, orderDetail?.category)}
+          </span>
         </div>
         <div className="flex items-baseline gap-1.5">
           <span className="text-13 font-medium text-secondary">{t("common.vendor")}:</span>
@@ -173,7 +188,7 @@ export const IssueTitleInput = observer(function IssueTitleInput(props: IssueTit
         </div>
         <div className="flex items-baseline gap-1.5">
           <span className="text-13 font-medium text-secondary">{t("common.quantity")}:</span>
-          <span className="text-20 font-medium">{orderDetail.quantity ? `${orderDetail.quantity} units` : "—"}</span>
+          <span className="text-20 font-medium">{orderDetail?.quantity ? `${orderDetail.quantity} units` : "—"}</span>
         </div>
       </div>
     );

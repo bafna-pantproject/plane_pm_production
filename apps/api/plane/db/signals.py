@@ -30,9 +30,10 @@ def create_order_detail_on_issue_creation(sender, instance, created, **kwargs):
 @receiver(post_save, sender=Issue)
 def trickle_down_order_details_to_new_sub_issue(sender, instance, created, **kwargs):
     """When a new work item is created directly under a parent (parent set at
-    creation time), seed its vendor, order number, vendor promised delivery
-    date (target_date), requested delivery date, and TNA plan (per-state
-    target dates) from the parent's. This is a one-time copy at creation only -
+    creation time), seed its vendor, order number, fit, category, vendor promised
+    delivery date (target_date), requested delivery date, and TNA plan (per-state
+    target dates) from the parent's. Sub work items are identified by their style
+    instead, so the category is always the parent's. This is a one-time copy at creation only -
     each field is independently editable afterward and is never re-synced from
     the parent again.
 
@@ -64,6 +65,8 @@ def trickle_down_order_details_to_new_sub_issue(sender, instance, created, **kwa
                 "project_id": instance.project_id,
                 "vendor_id": parent_order_detail.vendor_id,
                 "order_number": parent_order_detail.order_number,
+                "fit": parent_order_detail.fit,
+                "category": parent_order_detail.category,
                 "requested_delivery_date": parent_order_detail.requested_delivery_date,
             },
         )

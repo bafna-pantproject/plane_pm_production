@@ -45,6 +45,7 @@ import { useIssueDetail } from "@/hooks/store/use-issue-detail";
 import { useOrderDetail } from "@/hooks/store/use-order-detail";
 import { useProject } from "@/hooks/store/use-project";
 import { useProjectState } from "@/hooks/store/use-project-state";
+import { useStyle } from "@/hooks/store/use-style";
 import { useVendor } from "@/hooks/store/use-vendor";
 import { useWorkspaceDraftIssues } from "@/hooks/store/workspace-draft";
 import { usePlatformOS } from "@/hooks/use-platform-os";
@@ -78,6 +79,8 @@ export interface IssueFormProps {
   category: string;
   quantity: number | null;
   onFitChange: (fit: string) => void;
+  styleId: string | null;
+  onStyleChange: (styleId: string | null) => void;
   onCategoryChange: (category: string) => void;
   onQuantityChange: (quantity: number | null) => void;
   selectedRequestedDeliveryDate?: string | null;
@@ -113,6 +116,8 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
     category,
     quantity,
     onFitChange,
+    styleId,
+    onStyleChange,
     onCategoryChange,
     onQuantityChange,
     selectedRequestedDeliveryDate = null,
@@ -125,6 +130,7 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
   const [gptAssistantModal, setGptAssistantModal] = useState(false);
   const [isMoving, setIsMoving] = useState<boolean>(false);
   const [categoryError, setCategoryError] = useState<string | undefined>(undefined);
+  const [styleError, setStyleError] = useState<string | undefined>(undefined);
   const [quantityError, setQuantityError] = useState<string | undefined>(undefined);
 
   // refs
@@ -159,6 +165,7 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
   const { fetchCycles } = useProjectIssueProperties();
   const { getStateById } = useProjectState();
   const { getVendorById } = useVendor();
+  const { getStyleById } = useStyle();
   const { fetchIssueOrderDetail } = useOrderDetail();
 
   // form info
@@ -230,13 +237,17 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
   // there is no longer a free-form title field on the create/update form.
   // selectedVendorId is editable in both create and update mode (see category-quantity-input.tsx),
   // pre-filled from the existing OrderDetail when editing (see base.tsx's fetchIssueDetail).
+  // sub work items are identified by their style, and always take the parent's category
+  const isSubWorkItem = !!watch("parent_id");
+  const styleCode = styleId ? getStyleById(styleId)?.code : undefined;
   const vendorNameForDerivedName = selectedVendorId ? getVendorById(selectedVendorId)?.name : undefined;
   useEffect(() => {
-    const derivedName = composeOrderDetailName(formatFitCategory(fit, category), vendorNameForDerivedName, quantity);
+    const identity = isSubWorkItem ? styleCode : formatFitCategory(fit, category);
+    const derivedName = composeOrderDetailName(identity, vendorNameForDerivedName, quantity);
     if (!derivedName) return;
     setValue("name", derivedName, { shouldDirty: true, shouldValidate: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fit, category, quantity, vendorNameForDerivedName]);
+  }, [isSubWorkItem, styleCode, fit, category, quantity, vendorNameForDerivedName]);
 
   useEffect(() => {
     if (workItemTemplateId && editorRef.current) {
@@ -250,8 +261,8 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
   }, [workItemTemplateId]);
 
   const validateCategoryAndQuantity = () => {
-    const trimmedCategory = category.trim();
-    const nextCategoryError = trimmedCategory === "" ? t("category_is_required") : undefined;
+    const nextCategoryError = !isSubWorkItem && category.trim() === "" ? t("category_is_required") : undefined;
+    const nextStyleError = isSubWorkItem && !styleId ? t("style_is_required") : undefined;
     const nextQuantityError =
       quantity === null || quantity === undefined
         ? t("quantity_is_required")
@@ -259,8 +270,9 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
           ? t("quantity_must_be_a_positive_integer")
           : undefined;
     setCategoryError(nextCategoryError);
+    setStyleError(nextStyleError);
     setQuantityError(nextQuantityError);
-    return !nextCategoryError && !nextQuantityError;
+    return !nextCategoryError && !nextStyleError && !nextQuantityError;
   };
 
   const handleFormSubmit = async (formData: Partial<TIssue>, is_draft_issue = false) => {
@@ -394,6 +406,9 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
     fetchIssueOrderDetail(workspaceSlug.toString(), parentIssue?.project_id ?? projectId, parentIdForPrefill)
       .then((parentOrderDetail) => {
         if (cancelled || !parentOrderDetail) return;
+        // the category (and its fit) always follow the parent
+        onFitChange(parentOrderDetail.fit ?? "");
+        onCategoryChange(parentOrderDetail.category ?? "");
         if (parentOrderDetail.vendor && !selectedVendorId) onVendorChange?.(parentOrderDetail.vendor);
         if (parentOrderDetail.requested_delivery_date && !selectedRequestedDeliveryDate)
           onRequestedDeliveryDateChange?.(parentOrderDetail.requested_delivery_date);
@@ -467,6 +482,13 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
                   fit={fit}
                   category={category}
                   quantity={quantity}
+                  isSubWorkItem={isSubWorkItem}
+                  styleId={styleId}
+                  onStyleChange={(value) => {
+                    onStyleChange(value);
+                    setStyleError(undefined);
+                  }}
+                  styleError={styleError}
                   onFitChange={onFitChange}
                   onCategoryChange={onCategoryChange}
                   onQuantityChange={onQuantityChange}

@@ -27,6 +27,7 @@ import {
   cn,
   composeOrderDetailName,
   formatFitCategory,
+  formatStyleLabel,
   getDate,
   renderFormattedPayloadDate,
   shouldHighlightIssueDueDate,
@@ -85,7 +86,7 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
   const { getUserDetails } = useMember();
   const { getStateById } = useProjectState();
   const { workspaceVendors, createVendor, getVendorById } = useVendor();
-  const { workspaceStyles, createStyle } = useStyle();
+  const { workspaceStyles, createStyle, getStyleById } = useStyle();
   const { getOrderDetailByIssueId, fetchIssueOrderDetail, updateIssueOrderDetail } = useOrderDetail();
   const orderDetail = getOrderDetailByIssueId(issueId);
 
@@ -117,19 +118,30 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
   // work items that use category/vendor/quantity display that composite as their name
   // wherever the app just shows the plain title (kanban/list/calendar boards); keep it in
   // sync when category, vendor or quantity change here too, not just from the create/edit modal.
+  // sub work items are named after their style instead of their (parent's) category
   const syncDerivedName = (overrides: {
     fit?: string;
     category?: string;
+    styleId?: string | null;
     vendorId?: string | null;
     quantity?: number | null;
   }) => {
+    const isSubWorkItem = !!getIssueById(issueId)?.parent_id;
     const category = "category" in overrides ? overrides.category : orderDetail?.category;
-    if (!category) return;
     const fit = "fit" in overrides ? overrides.fit : orderDetail?.fit;
+    const styleId = "styleId" in overrides ? overrides.styleId : orderDetail?.style;
+    const identity = isSubWorkItem
+      ? styleId
+        ? getStyleById(styleId)?.code
+        : undefined
+      : category
+        ? formatFitCategory(fit, category)
+        : undefined;
+    if (!identity) return;
     const vendorId = "vendorId" in overrides ? overrides.vendorId : orderDetail?.vendor;
     const quantity = "quantity" in overrides ? overrides.quantity : orderDetail?.quantity;
     const vendorName = vendorId ? getVendorById(vendorId)?.name : undefined;
-    const derivedName = composeOrderDetailName(formatFitCategory(fit, category), vendorName, quantity);
+    const derivedName = composeOrderDetailName(identity, vendorName, quantity);
     if (derivedName) issueOperations.update(workspaceSlug, projectId, issueId, { name: derivedName });
   };
 
@@ -422,8 +434,11 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
               <CatalogSelect
                 className="w-full grow"
                 value={orderDetail?.style}
-                onChange={(val) => updateOrderDetail({ style: val })}
-                options={(workspaceStyles ?? []).map((style) => ({ id: style.id, label: style.name || style.code }))}
+                onChange={(val) => {
+                  updateOrderDetail({ style: val });
+                  syncDerivedName({ styleId: val });
+                }}
+                options={(workspaceStyles ?? []).map((style) => ({ id: style.id, label: formatStyleLabel(style) }))}
                 placeholder={t("common.style")}
                 disabled={!isEditable}
                 onCreate={isEditable ? (name) => createStyle(workspaceSlug, { code: name, name }) : undefined}

@@ -68,6 +68,7 @@ export const CreateUpdateIssueModalBase = observer(function CreateUpdateIssueMod
   const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
   const [selectedVendorId, setSelectedVendorId] = useState<string | null>(null);
   const [selectedFit, setSelectedFit] = useState<string>("");
+  const [selectedStyleId, setSelectedStyleId] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [selectedQuantity, setSelectedQuantity] = useState<number | null>(null);
   const [selectedRequestedDeliveryDate, setSelectedRequestedDeliveryDate] = useState<string | null>(null);
@@ -99,6 +100,7 @@ export const CreateUpdateIssueModalBase = observer(function CreateUpdateIssueMod
       // Set description to the issue description from the props if available
       setDescription(data?.description_html || "<p></p>");
       setSelectedFit("");
+      setSelectedStyleId(null);
       setSelectedCategory(data?.name ?? "");
       setSelectedQuantity(null);
       setSelectedVendorId(null);
@@ -113,6 +115,7 @@ export const CreateUpdateIssueModalBase = observer(function CreateUpdateIssueMod
     // legacy work items predate category/quantity and have no OrderDetail.category yet;
     // fall back to the existing title so it carries forward instead of being silently discarded
     setSelectedFit(orderDetail?.fit ?? "");
+    setSelectedStyleId(orderDetail?.style ?? null);
     setSelectedCategory(orderDetail?.category || response?.name || data?.name || "");
     setSelectedQuantity(orderDetail?.quantity ?? null);
     setSelectedVendorId(orderDetail?.vendor ?? null);
@@ -265,6 +268,7 @@ export const CreateUpdateIssueModalBase = observer(function CreateUpdateIssueMod
           fit: selectedFit,
           category: selectedCategory,
           quantity: selectedQuantity,
+          ...(selectedStyleId ? { style: selectedStyleId } : {}),
           ...(selectedVendorId ? { vendor: selectedVendorId } : {}),
           ...(selectedRequestedDeliveryDate ? { requested_delivery_date: selectedRequestedDeliveryDate } : {}),
           ...(selectedOrderNumber.trim() ? { order_number: selectedOrderNumber.trim() } : {}),
@@ -288,6 +292,7 @@ export const CreateUpdateIssueModalBase = observer(function CreateUpdateIssueMod
       setChangesMade(null);
       setSelectedVendorId(null);
       setSelectedFit("");
+      setSelectedStyleId(null);
       setSelectedCategory("");
       setSelectedQuantity(null);
       setSelectedRequestedDeliveryDate(null);
@@ -375,6 +380,7 @@ export const CreateUpdateIssueModalBase = observer(function CreateUpdateIssueMod
         fit: selectedFit,
         category: selectedCategory,
         quantity: selectedQuantity,
+        style: selectedStyleId,
         vendor: selectedVendorId,
         requested_delivery_date: selectedRequestedDeliveryDate,
         order_number: selectedOrderNumber.trim(),
@@ -467,6 +473,8 @@ export const CreateUpdateIssueModalBase = observer(function CreateUpdateIssueMod
     category: selectedCategory,
     quantity: selectedQuantity,
     onFitChange: setSelectedFit,
+    styleId: selectedStyleId,
+    onStyleChange: setSelectedStyleId,
     onCategoryChange: setSelectedCategory,
     onQuantityChange: setSelectedQuantity,
     selectedRequestedDeliveryDate: selectedRequestedDeliveryDate,

@@ -12,11 +12,12 @@ import { useTranslation } from "@plane/i18n";
 // ui
 import { Input } from "@plane/ui";
 // helpers
-import { cn, getTabIndex } from "@plane/utils";
+import { cn, formatFitCategory, formatStyleLabel, getTabIndex } from "@plane/utils";
 // components
 import { CatalogSelect } from "@/components/issues/issue-detail/catalog-select";
 import { FitCategorySelect } from "@/components/product-master/fit-category-select";
 // hooks
+import { useStyle } from "@/hooks/store/use-style";
 import { useVendor } from "@/hooks/store/use-vendor";
 import { usePlatformOS } from "@/hooks/use-platform-os";
 
@@ -26,6 +27,11 @@ type TIssueCategoryQuantityInputProps = {
   quantity: number | null;
   onFitChange: (value: string) => void;
   onCategoryChange: (value: string) => void;
+  // sub work items pick a style instead; their fit/category come from the parent
+  isSubWorkItem?: boolean;
+  styleId?: string | null;
+  onStyleChange?: (styleId: string | null) => void;
+  styleError?: string;
   onQuantityChange: (value: number | null) => void;
   handleFormChange: () => void;
   categoryError?: string;
@@ -48,6 +54,10 @@ export const IssueCategoryQuantityInput = observer(function IssueCategoryQuantit
     quantity,
     onFitChange,
     onCategoryChange,
+    isSubWorkItem = false,
+    styleId = null,
+    onStyleChange,
+    styleError,
     onQuantityChange,
     handleFormChange,
     categoryError,
@@ -63,29 +73,52 @@ export const IssueCategoryQuantityInput = observer(function IssueCategoryQuantit
   const { isMobile } = usePlatformOS();
   const { t } = useTranslation();
   const { workspaceVendors, createVendor } = useVendor();
+  const { workspaceStyles, createStyle } = useStyle();
 
   const { getIndex } = getTabIndex(ETabIndices.ISSUE_FORM, isMobile);
 
   return (
     <div className="flex gap-3">
-      <div className="flex-1 self-start pt-0.5">
-        <FitCategorySelect
-          workspaceSlug={workspaceSlug}
-          fit={fit}
-          category={category}
-          onChange={(value) => {
-            onFitChange(value.fit);
-            onCategoryChange(value.category);
-            handleFormChange();
-          }}
-          isCategoryDisabled={isCategoryDisabled}
-          selectClassName={cn(
-            "min-w-0 flex-1 rounded-sm border",
-            categoryError ? "border-danger-strong" : "border-strong"
+      {isSubWorkItem ? (
+        <div className="flex-1 self-start pt-0.5">
+          <CatalogSelect
+            value={styleId}
+            onChange={(value) => {
+              onStyleChange?.(value);
+              handleFormChange();
+            }}
+            options={(workspaceStyles ?? []).map((style) => ({ id: style.id, label: formatStyleLabel(style) }))}
+            placeholder={t("common.style")}
+            onCreate={(name) => createStyle(workspaceSlug, { code: name, name })}
+            className={cn("w-full rounded-sm border", styleError ? "border-danger-strong" : "border-strong")}
+          />
+          <span className="text-caption-sm-medium text-danger-primary">{styleError}</span>
+          {category && !styleError && (
+            <span className="block truncate text-caption-sm-regular text-tertiary">
+              {t("common.category_from_parent", { category: formatFitCategory(fit, category) })}
+            </span>
           )}
-        />
-        <span className="text-caption-sm-medium text-danger-primary">{categoryError}</span>
-      </div>
+        </div>
+      ) : (
+        <div className="flex-1 self-start pt-0.5">
+          <FitCategorySelect
+            workspaceSlug={workspaceSlug}
+            fit={fit}
+            category={category}
+            onChange={(value) => {
+              onFitChange(value.fit);
+              onCategoryChange(value.category);
+              handleFormChange();
+            }}
+            isCategoryDisabled={isCategoryDisabled}
+            selectClassName={cn(
+              "min-w-0 flex-1 rounded-sm border",
+              categoryError ? "border-danger-strong" : "border-strong"
+            )}
+          />
+          <span className="text-caption-sm-medium text-danger-primary">{categoryError}</span>
+        </div>
+      )}
       {onVendorChange && (
         <div className="w-48 self-start pt-0.5">
           <CatalogSelect

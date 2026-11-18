@@ -13,7 +13,14 @@ import type { IPartialProject, ISearchIssueResponse, IState, TIssue } from "@pla
 export const formatFitCategory = (fit: string | null | undefined, category: string | null | undefined): string =>
   [fit?.trim(), category?.trim()].filter(Boolean).join(" ");
 
+/** a style as picked in dropdowns: its code (the style id), plus its name when that adds anything */
+export const formatStyleLabel = (style: { code: string; name: string } | null | undefined): string => {
+  if (!style) return "";
+  return style.name && style.name !== style.code ? `${style.code} · ${style.name}` : style.code;
+};
+
 // Work items are identified by category/vendor/quantity instead of a free-form title.
+// Sub work items use their style code in place of the category.
 // Every place that can change one of those 3 values (the create/edit modal, the issue
 // detail sidebar's vendor dropdown) recomputes the work item's name with this so the
 // board/list/kanban views - which only ever display the plain name field - stay in sync.

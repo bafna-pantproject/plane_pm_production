@@ -73,6 +73,26 @@ class TestOrderDetailAndTNAPlanTrickleDown:
         assert child_order_detail.order_number == "PO-100"
 
     @pytest.mark.django_db
+    def test_new_sub_issue_inherits_fit_and_category_from_parent(self, project, stages, create_user):
+        parent = Issue.objects.create(
+            name="Parent order", project=project, workspace=project.workspace, state=stages["cutting"], created_by=create_user
+        )
+        OrderDetail.objects.filter(issue=parent).update(fit="Slim Fit", category="T-Shirts")
+
+        child = Issue.objects.create(
+            name="Child order",
+            project=project,
+            workspace=project.workspace,
+            state=stages["cutting"],
+            parent=parent,
+            created_by=create_user,
+        )
+
+        child_order_detail = OrderDetail.objects.get(issue=child)
+        assert child_order_detail.fit == "Slim Fit"
+        assert child_order_detail.category == "T-Shirts"
+
+    @pytest.mark.django_db
     def test_new_sub_issue_inherits_requested_delivery_date_from_parent(self, project, stages, create_user):
         parent = Issue.objects.create(
             name="Parent order", project=project, workspace=project.workspace, state=stages["cutting"], created_by=create_user

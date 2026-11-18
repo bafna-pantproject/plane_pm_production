@@ -27,6 +27,7 @@ import { useOrderDetail } from "@/hooks/store/use-order-detail";
 import { useProjectState } from "@/hooks/store/use-project-state";
 import { useStateTransitionGate } from "@/hooks/store/use-state-transition-gate";
 import { useTaskStateTarget } from "@/hooks/store/use-task-state-target";
+import { useStyle } from "@/hooks/store/use-style";
 import { useVendor } from "@/hooks/store/use-vendor";
 import { escapeHtml } from "@/hooks/use-date-change-reason";
 // store
@@ -67,7 +68,11 @@ const StateRequiredFieldsForm = observer(function StateRequiredFieldsForm(props:
   const { getStateById, getProjectStates } = useProjectState();
   const { updateIssueOrderDetail, getOrderDetailByIssueId } = useOrderDetail();
   const { setIssueStateTarget } = useTaskStateTarget();
-  const { comment } = useIssueDetail();
+  const {
+    comment,
+    issue: { getIssueById },
+  } = useIssueDetail();
+  const { getStyleById } = useStyle();
   const { workspaceVendors, createVendor, getVendorById } = useVendor();
   // states
   const [values, setValues] = useState<TFieldValues>({});
@@ -135,12 +140,16 @@ const StateRequiredFieldsForm = observer(function StateRequiredFieldsForm(props:
       if (["fit", "category", "vendor", "quantity"].some((key) => key in orderDetailPatch)) {
         const detail = getOrderDetailByIssueId(issueId);
         const vendorName = detail?.vendor ? getVendorById(detail.vendor)?.name : undefined;
-        const derivedName = composeOrderDetailName(
-          formatFitCategory(detail?.fit, detail?.category),
-          vendorName,
-          detail?.quantity
-        );
-        if (detail?.category && derivedName) issueData.name = derivedName;
+        const isSubWorkItem = !!getIssueById(issueId)?.parent_id;
+        const identity = isSubWorkItem
+          ? detail?.style
+            ? getStyleById(detail.style)?.code
+            : undefined
+          : detail?.category
+            ? formatFitCategory(detail?.fit, detail?.category)
+            : undefined;
+        const derivedName = identity ? composeOrderDetailName(identity, vendorName, detail?.quantity) : null;
+        if (derivedName) issueData.name = derivedName;
       }
 
       settle({ proceed: true, issueData });
