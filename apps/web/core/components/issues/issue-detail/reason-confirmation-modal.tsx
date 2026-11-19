@@ -49,30 +49,34 @@ export function ReasonConfirmationModal(props: Props) {
 
   return (
     <ModalCore isOpen={isOpen} handleClose={handleClose} position={EModalPosition.CENTER} width={EModalWidth.XL}>
-      <div className="flex flex-col items-center gap-4 p-5 sm:flex-row sm:items-start">
-        <span className="grid size-12 flex-shrink-0 place-items-center rounded-full bg-danger-subtle text-danger-primary sm:size-10">
-          <AlertTriangle className="size-5" aria-hidden="true" />
-        </span>
-        <div className="w-full text-center sm:text-left">
-          <h3 className="text-16 font-medium">{title}</h3>
-          <p className="mt-1 text-13 text-secondary">{description}</p>
-          <TextArea
-            value={reason}
-            onChange={(event) => setReason(event.target.value)}
-            placeholder={t("common.reason_placeholder")}
-            className="mt-3 w-full text-body-sm-regular"
-            rows={3}
-            disabled={isSubmitting}
-          />
+      {/* opened from the peek view, a click in here mustn't count as a click outside the peek: that
+          would close the peek, and with it this modal and the change waiting on it, before Confirm runs */}
+      <div data-prevent-outside-click>
+        <div className="flex flex-col items-center gap-4 p-5 sm:flex-row sm:items-start">
+          <span className="grid size-12 flex-shrink-0 place-items-center rounded-full bg-danger-subtle text-danger-primary sm:size-10">
+            <AlertTriangle className="size-5" aria-hidden="true" />
+          </span>
+          <div className="w-full text-center sm:text-left">
+            <h3 className="text-16 font-medium">{title}</h3>
+            <p className="mt-1 text-13 text-secondary">{description}</p>
+            <TextArea
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+              placeholder={t("common.reason_placeholder")}
+              className="mt-3 w-full text-body-sm-regular"
+              rows={3}
+              disabled={isSubmitting}
+            />
+          </div>
         </div>
-      </div>
-      <div className="flex flex-col-reverse gap-2 border-t-[0.5px] border-subtle px-5 py-4 sm:flex-row sm:justify-end">
-        <Button variant="secondary" onClick={handleClose} disabled={isSubmitting}>
-          {t("cancel")}
-        </Button>
-        <Button variant="error-fill" onClick={handleSubmit} loading={isSubmitting} disabled={!reason.trim()}>
-          {t("confirm")}
-        </Button>
+        <div className="flex flex-col-reverse gap-2 border-t-[0.5px] border-subtle px-5 py-4 sm:flex-row sm:justify-end">
+          <Button variant="secondary" onClick={handleClose} disabled={isSubmitting}>
+            {t("cancel")}
+          </Button>
+          <Button variant="error-fill" onClick={handleSubmit} loading={isSubmitting} disabled={!reason.trim()}>
+            {t("confirm")}
+          </Button>
+        </div>
       </div>
     </ModalCore>
   );

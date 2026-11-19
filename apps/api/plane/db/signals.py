@@ -16,8 +16,10 @@ from .models.order import OrderDetail, TaskStateTarget
 def stash_previous_issue_state(sender, instance, **kwargs):
     if instance._state.adding:
         instance._previous_state_id = None
+        instance._previous_target_date = None
         return
-    instance._previous_state_id = Issue.objects.filter(pk=instance.pk).values_list("state_id", flat=True).first()
+    previous = Issue.objects.filter(pk=instance.pk).values_list("state_id", "target_date").first()
+    instance._previous_state_id, instance._previous_target_date = previous or (None, None)
 
 
 @receiver(post_save, sender=Issue)
@@ -34,8 +36,8 @@ def trickle_down_order_details_to_new_sub_issue(sender, instance, created, **kwa
     delivery date (target_date), requested delivery date, and TNA plan (per-state
     target dates) from the parent's. Sub work items are identified by their style
     instead, so the category is always the parent's. This is a one-time copy at creation only -
-    each field is independently editable afterward and is never re-synced from
-    the parent again.
+    each field is independently editable afterward. The two delivery dates are the exception:
+    a later change to the parent's is pushed down again (see sync_*_to_sub_issues below).
 
     target_date is only trickled down if the child doesn't already have one -
     the create form sets target_date directly on the same creation call, so an
@@ -94,3 +96,40 @@ def track_task_state_target_entry(sender, instance, created, **kwargs):
         state_id=instance.state_id,
         defaults={"project_id": instance.project_id, "entered_at": timezone.now()},
     )
+
+
+# A parent order's dates are its sub work items' dates: changing the parent's vendor promised
+# delivery date (Issue.target_date) or requested delivery date (OrderDetail) sets it on all of
+# its direct sub work items too. Clearing a parent's date leaves the sub-items' dates alone, so
+# an accidental clear can't wipe them. Queryset updates, so the sub-items' own save signals and
+# activity don't run.
+
+
+@receiver(post_save, sender=Issue)
+def sync_target_date_to_sub_issues(sender, instance, created, **kwargs):
+    if created or not instance.target_date:
+        return
+    if instance.target_date == getattr(instance, "_previous_target_date", instance.target_date):
+        return
+    Issue.objects.filter(parent_id=instance.pk).exclude(target_date=instance.target_date).update(
+        target_date=instance.target_date, updated_at=timezone.now()
+    )
+
+
+@receiver(pre_save, sender=OrderDetail)
+def stash_previous_requested_delivery_date(sender, instance, **kwargs):
+    instance._previous_requested_delivery_date = (
+        None
+        if instance._state.adding
+        else OrderDetail.objects.filter(pk=instance.pk).values_list("requested_delivery_date", flat=True).first()
+    )
+
+
+@receiver(post_save, sender=OrderDetail)
+def sync_requested_delivery_date_to_sub_issues(sender, instance, created, **kwargs):
+    new_date = instance.requested_delivery_date
+    if created or not new_date or new_date == getattr(instance, "_previous_requested_delivery_date", new_date):
+        return
+    OrderDetail.objects.filter(issue__parent_id=instance.issue_id, issue__deleted_at__isnull=True).exclude(
+        requested_delivery_date=new_date
+    ).update(requested_delivery_date=new_date, updated_at=timezone.now())

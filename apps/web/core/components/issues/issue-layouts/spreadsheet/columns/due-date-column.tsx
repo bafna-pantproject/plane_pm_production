@@ -75,7 +75,6 @@ export const SpreadsheetDueDateColumn = observer(function SpreadsheetDueDateColu
               "text-danger-primary": shouldHighlightIssueDueDate(issue.target_date, stateDetails?.group),
             }
           )}
-          optionsClassName="z-[9]"
           clearIconClassName="!text-primary"
           onClose={onClose}
         />

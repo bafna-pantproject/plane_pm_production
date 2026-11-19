@@ -608,6 +608,19 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
       // call API to update the issue
       await this.issueService.patchIssue(workspaceSlug, projectId, issueId, data);
 
+      // the server sets a parent's new vendor promised delivery date on its direct sub work
+      // items too (not when it's cleared); mirror that onto the ones already loaded
+      const targetDate = data.target_date;
+      if (targetDate) {
+        await Promise.all(
+          Object.values(this.rootIssueStore.issues.issuesMap)
+            .filter((subIssue) => subIssue.parent_id === issueId && subIssue.target_date !== targetDate)
+            .map((subIssue) =>
+              this.issueUpdate(workspaceSlug, projectId, subIssue.id, { target_date: targetDate }, false)
+            )
+        );
+      }
+
       // entered_at is stamped server-side on the transition, so the cached TNA plan is stale now
       const { taskStateTarget } = this.rootIssueStore.rootStore;
       if (data.state_id !== undefined && taskStateTarget.fetchedMap[issueId]) {

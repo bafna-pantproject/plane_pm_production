@@ -64,7 +64,6 @@ export const SpreadsheetRequestedDeliveryDateColumn = observer(function Spreadsh
           buttonVariant="transparent-with-text"
           buttonContainerClassName="w-full"
           buttonClassName="rounded-none px-page-x text-left group-[.selected-issue-row]:bg-accent-primary/5 group-[.selected-issue-row]:hover:bg-accent-primary/10"
-          optionsClassName="z-[9]"
           clearIconClassName="!text-primary"
           onClose={onClose}
         />

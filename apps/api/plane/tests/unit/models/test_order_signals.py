@@ -357,3 +357,94 @@ class TestTaskStateTargetLifecycle:
 
         target.refresh_from_db()
         assert target.entered_at == original_entered_at
+
+
+@pytest.mark.unit
+class TestParentDeliveryDatesSyncToSubIssues:
+    """Changing a parent order's vendor promised delivery date or requested delivery date
+    sets it on its direct sub work items too. Clearing it leaves theirs alone."""
+
+    @pytest.fixture
+    def family(self, project, stages, create_user):
+        parent = Issue.objects.create(
+            name="Parent order", project=project, workspace=project.workspace, state=stages["cutting"], created_by=create_user
+        )
+        children = [
+            Issue.objects.create(
+                name=f"Child {n}",
+                project=project,
+                workspace=project.workspace,
+                state=stages["cutting"],
+                parent=parent,
+                created_by=create_user,
+            )
+            for n in range(2)
+        ]
+        grandchild = Issue.objects.create(
+            name="Grandchild",
+            project=project,
+            workspace=project.workspace,
+            state=stages["cutting"],
+            parent=children[0],
+            created_by=create_user,
+        )
+        return parent, children, grandchild
+
+    @pytest.mark.django_db
+    def test_changing_the_parents_target_date_updates_its_sub_issues(self, family):
+        from datetime import date
+
+        parent, children, grandchild = family
+        Issue.objects.filter(pk=children[1].pk).update(target_date=date(2026, 12, 1))
+
+        parent.target_date = date(2027, 1, 15)
+        parent.save()
+
+        for child in children:
+            child.refresh_from_db()
+            assert child.target_date == date(2027, 1, 15)
+        grandchild.refresh_from_db()
+        assert grandchild.target_date is None
+
+    @pytest.mark.django_db
+    def test_clearing_the_parents_target_date_keeps_the_sub_issues_dates(self, family):
+        from datetime import date
+
+        parent, children, _ = family
+        parent.target_date = date(2027, 1, 15)
+        parent.save()
+
+        parent.target_date = None
+        parent.save()
+
+        children[0].refresh_from_db()
+        assert children[0].target_date == date(2027, 1, 15)
+
+    @pytest.mark.django_db
+    def test_changing_the_parents_requested_delivery_date_updates_its_sub_issues(self, family):
+        from datetime import date
+
+        parent, children, grandchild = family
+        detail = OrderDetail.objects.get(issue=parent)
+        detail.requested_delivery_date = date(2027, 2, 1)
+        detail.save()
+
+        for child in children:
+            assert OrderDetail.objects.get(issue=child).requested_delivery_date == date(2027, 2, 1)
+        assert OrderDetail.objects.get(issue=grandchild).requested_delivery_date is None
+
+    @pytest.mark.django_db
+    def test_saving_a_parent_without_a_date_change_leaves_sub_issues_alone(self, family):
+        from datetime import date
+
+        parent, children, _ = family
+        parent.target_date = date(2027, 1, 15)
+        parent.save()
+        Issue.objects.filter(pk=children[0].pk).update(target_date=date(2027, 3, 3))
+
+        parent.name = "Renamed order"
+        parent.save()
+
+        children[0].refresh_from_db()
+        assert children[0].target_date == date(2027, 3, 3)
+

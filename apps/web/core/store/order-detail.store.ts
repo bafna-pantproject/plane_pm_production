@@ -82,6 +82,24 @@ export class OrderDetailStore implements IOrderDetailStore {
       return response;
     });
 
+  /**
+   * Work item rows (spreadsheet, boards) read the requested delivery date off the work item,
+   * so copy it there. A parent's new date is also set on its direct sub work items by the
+   * server (not when it's cleared), so mirror that onto the ones already loaded.
+   */
+  private mirrorRequestedDeliveryDate = (issueId: string, orderDetail: TOrderDetail) => {
+    const issues = this.rootStore.issue.issues;
+    const date = orderDetail.requested_delivery_date ?? null;
+    if (issues.getIssueById(issueId)) issues.updateIssue(issueId, { requested_delivery_date: date });
+    if (!date) return;
+    for (const issue of Object.values(issues.issuesMap)) {
+      if (issue.parent_id !== issueId) continue;
+      issues.updateIssue(issue.id, { requested_delivery_date: date });
+      if (this.orderDetailByIssueId[issue.id])
+        set(this.orderDetailByIssueId, [issue.id, "requested_delivery_date"], date);
+    }
+  };
+
   updateIssueOrderDetail = async (
     workspaceSlug: string,
     projectId: string,
@@ -92,7 +110,10 @@ export class OrderDetailStore implements IOrderDetailStore {
     try {
       runInAction(() => set(this.orderDetailByIssueId, [issueId], { ...original, ...data }));
       const response = await this.orderDetailService.patchIssueOrderDetail(workspaceSlug, projectId, issueId, data);
-      runInAction(() => set(this.orderDetailByIssueId, [issueId], response));
+      runInAction(() => {
+        set(this.orderDetailByIssueId, [issueId], response);
+        if (data.requested_delivery_date !== undefined) this.mirrorRequestedDeliveryDate(issueId, response);
+      });
       return response;
     } catch (error) {
       runInAction(() => {
